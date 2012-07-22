@@ -123,6 +123,7 @@ RoutingProtocol::RoutingProtocol () :
   m_nb (HelloInterval),
   m_rreqCount (0),
   m_rerrCount (0),
+  m_malicious (false),
   m_htimer (Timer::CANCEL_ON_DESTROY),
   m_rreqRateLimitTimer (Timer::CANCEL_ON_DESTROY),
   m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY)
@@ -233,7 +234,10 @@ RoutingProtocol::GetTypeId (void)
                    MakeBooleanAccessor (&RoutingProtocol::SetBroadcastEnable,
                                         &RoutingProtocol::GetBroadcastEnable),
                    MakeBooleanChecker ())
-
+    .AddAttribute ("Malicious", "Indicates whether this aodv routing protocol is malicious.",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&RoutingProtocol::m_malicious),
+                   MakeBooleanChecker ())
   ;
   return tid;
 }
@@ -1226,7 +1230,7 @@ RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, Routing
 void
 RoutingProtocol::SendReplyAck (Ipv4Address neighbor)
 {
-  NS_LOG_FUNCTION (this << " to " << neighbor);
+  NS_LOG_FUNCTION (this << " send reply to " << neighbor);
   RrepAckHeader h;
   TypeHeader typeHeader (AODVTYPE_RREP_ACK);
   Ptr<Packet> packet = Create<Packet> ();

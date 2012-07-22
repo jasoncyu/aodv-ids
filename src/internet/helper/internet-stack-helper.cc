@@ -384,12 +384,16 @@ InternetStackHelper::Install (Ptr<Node> node) const
       BooleanValue mal;
       std::string s = "Malicious";
       node->GetAttribute (s, mal);
+      Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+      Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);
 
       if (!mal) { 
-        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
-
-        Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);
         ipv4->SetRoutingProtocol (ipv4Routing);
+        std::cout << "unmalicious protocol set" << std::endl;
+      } else {
+        ipv4Routing->SetAttribute ("Malicious", BooleanValue (true));
+        ipv4->SetRoutingProtocol (ipv4Routing);
+        std::cout << "malicious protocol set" << std::endl;
       }
     }
 

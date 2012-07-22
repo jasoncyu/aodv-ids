@@ -22,9 +22,9 @@
 
 #include "ns3/aodv-module.h"
 #include "ns3/core-module.h"
+#include "ns3/mobility-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
-#include "ns3/mobility-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/wifi-module.h" 
 #include "ns3/v4ping-helper.h"
@@ -95,7 +95,7 @@ int main (int argc, char **argv)
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (10),
+  size (3),
   step (100),
   totalTime (10),
   pcap (true),
@@ -144,8 +144,7 @@ AodvExample::Report (std::ostream &)
 }
 
 void
-AodvExample::CreateNodes ()
-{
+AodvExample::CreateNodes () {
   std::cout << "Creating " << (unsigned)size << " nodes " << step << " m apart.\n";
   nodes.Create (size);
   // Name nodes
@@ -191,9 +190,14 @@ AodvExample::InstallInternetStack ()
 {
   AodvHelper aodv;
   // you can configure AODV attributes here using aodv.Set(name, value)
+  Ptr<Node> mal_node = nodes.Get (size - 1);
+  mal_node->SetAttribute ("Malicious", BooleanValue (true));
+  
   InternetStackHelper stack;
   stack.SetRoutingHelper (aodv); // has effect on the next Install ()
   stack.Install (nodes);
+
+
   Ipv4AddressHelper address;
   address.SetBase ("10.0.0.0", "255.0.0.0");
   interfaces = address.Assign (devices);
@@ -204,6 +208,7 @@ AodvExample::InstallInternetStack ()
       aodv.PrintRoutingTableAllAt (Seconds (8), routingStream);
     }
 }
+
 
 void
 AodvExample::InstallApplications ()
@@ -216,8 +221,8 @@ AodvExample::InstallApplications ()
   p.Stop (Seconds (totalTime) - Seconds (0.001));
 
   // move node away
-  Ptr<Node> node = nodes.Get (size/2);
-  Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
-  Simulator::Schedule (Seconds (totalTime/3), &MobilityModel::SetPosition, mob, Vector (1e5, 1e5, 1e5));
+  // Ptr<Node> node = nodes.Get (size/2);
+  // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
+  // Simulator::Schedule (Seconds (totalTime/3), &MobilityModel::SetPosition, mob, Vector (1e5, 1e5, 1e5));
 }
 
