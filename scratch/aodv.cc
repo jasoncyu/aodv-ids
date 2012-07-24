@@ -107,7 +107,7 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_FUNCTION);
 
   SeedManager::SetSeed (12345);
   CommandLine cmd;
@@ -213,12 +213,13 @@ AodvExample::InstallInternetStack ()
 void
 AodvExample::InstallApplications ()
 {
-  V4PingHelper ping (interfaces.GetAddress (size - 1));
-  ping.SetAttribute ("Verbose", BooleanValue (true));
+  //original traffic
+  // V4PingHelper ping (interfaces.GetAddress (size - 1));
+  // ping.SetAttribute ("Verbose", BooleanValue (true));
 
-  ApplicationContainer p = ping.Install (nodes.Get (0));
-  p.Start (Seconds (0));
-  p.Stop (Seconds (totalTime) - Seconds (0.001));
+  // ApplicationContainer p = ping.Install (nodes.Get (0));
+  // p.Start (Seconds (0));
+  // p.Stop (Seconds (totalTime) - Seconds (0.001));
 
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);
