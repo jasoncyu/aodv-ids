@@ -31,25 +31,25 @@
 #include <cmath>
 
 using namespace ns3;
-void ReceivePacket (Ptr<Socket> socket)
-{
-  NS_LOG_UNCOND ("Received one packet!");
-}
+// void ReceivePacket (Ptr<Socket> socket)
+// {
+//   NS_LOG_UNCOND ("Received one packet!");
+// }
 
-static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
-                             uint32_t pktCount, Time pktInterval )
-{
-  if (pktCount > 0)
-    {
-      socket->Send (Create<Packet> (pktSize));
-      Simulator::Schedule (pktInterval, &GenerateTraffic, 
-                           socket, pktSize,pktCount-1, pktInterval);
-    }
-  else
-    {
-      socket->Close ();
-    }
-}
+// static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
+//                              uint32_t pktCount, Time pktInterval )
+// {
+//   if (pktCount > 0)
+//     {
+//       socket->Send (Create<Packet> (pktSize));
+//       Simulator::Schedule (pktInterval, &GenerateTraffic, 
+//                            socket, pktSize,pktCount-1, pktInterval);
+//     }
+//   else
+//     {
+//       socket->Close ();
+//     }
+// }
 
 
 
@@ -243,37 +243,37 @@ AodvExample::InstallInternetStack ()
 void
 AodvExample::InstallApplications ()
 {
+  // new traffic
+  // TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+  // Ptr<Socket> recvSink = Socket::CreateSocket (nodes.Get (0), tid);
+  // InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
+  // recvSink->Bind (local);
+  // recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
 
-  TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-  Ptr<Socket> recvSink = Socket::CreateSocket (nodes.Get (0), tid);
-  InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
-  recvSink->Bind (local);
-  recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
+  // Ptr<Socket> source = Socket::CreateSocket (nodes.Get (1), tid);
+  // InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
+  // source->SetAllowBroadcast (true);
+  // source->Connect (remote);
 
-  Ptr<Socket> source = Socket::CreateSocket (nodes.Get (1), tid);
-  InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
-  source->SetAllowBroadcast (true);
-  source->Connect (remote);
+  // NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
 
-  NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
+  // Time interPacketInterval = Seconds (interval);
 
-  Time interPacketInterval = Seconds (interval);
-
-  Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
-                                  Seconds (2.0), &GenerateTraffic, 
-                                  source, packetSize, numPackets, interPacketInterval);
-  Ptr<Node> node = nodes.Get (size/2);
-  Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
-  Simulator::Schedule (Seconds (1.0), &MobilityModel::SetPosition, mob, Vector(100, 50, 0));
+  // Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
+  //                                 Seconds (2.0), &GenerateTraffic, 
+  //                                 source, packetSize, numPackets, interPacketInterval);
+  // Ptr<Node> node = nodes.Get (size/2);
+  // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
+  // Simulator::Schedule (Seconds (1.0), &MobilityModel::SetPosition, mob, Vector(100, 50, 0));
 
 
   //original traffic
-  // V4PingHelper ping (interfaces.GetAddress (size - 1));
-  // ping.SetAttribute ("Verbose", BooleanValue (true));
+  V4PingHelper ping (interfaces.GetAddress (size - 1));
+  ping.SetAttribute ("Verbose", BooleanValue (true));
 
-  // ApplicationContainer p = ping.Install (nodes.Get (0));
-  // p.Start (Seconds (0));
-  // p.Stop (Seconds (totalTime) - Seconds (0.001));
+  ApplicationContainer p = ping.Install (nodes.Get (0));
+  p.Start (Seconds (0));
+  p.Stop (Seconds (totalTime) - Seconds (0.001));
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);
   // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
