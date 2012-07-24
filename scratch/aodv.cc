@@ -31,25 +31,25 @@
 #include <cmath>
 
 using namespace ns3;
-// void ReceivePacket (Ptr<Socket> socket)
-// {
-//   NS_LOG_UNCOND ("Received one packet!");
-// }
+void ReceivePacket (Ptr<Socket> socket)
+{
+  NS_LOG_UNCOND ("Received one packet!");
+}
 
-// static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
-//                              uint32_t pktCount, Time pktInterval )
-// {
-//   if (pktCount > 0)
-//     {
-//       socket->Send (Create<Packet> (pktSize));
-//       Simulator::Schedule (pktInterval, &GenerateTraffic, 
-//                            socket, pktSize,pktCount-1, pktInterval);
-//     }
-//   else
-//     {
-//       socket->Close ();
-//     }
-// }
+static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
+                             uint32_t pktCount, Time pktInterval )
+{
+  if (pktCount > 0)
+    {
+      socket->Send (Create<Packet> (pktSize));
+      Simulator::Schedule (pktInterval, &GenerateTraffic, 
+                           socket, pktSize,pktCount-1, pktInterval);
+    }
+  else
+    {
+      socket->Close ();
+    }
+}
 
 
 
@@ -91,6 +91,7 @@ private:
   uint32_t numPackets;
   double interval; // seconds
   bool verbose;
+  bool malicious;
   //\}
 
   ///\name network
@@ -120,7 +121,7 @@ int main (int argc, char **argv)
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (3),
+  size (10),
   step (100),
   totalTime (10),
   pcap (true),
@@ -129,7 +130,8 @@ AodvExample::AodvExample () :
   packetSize(1000),
   numPackets(1),
   interval(1.0),
-  verbose(false)
+  verbose(false),
+  malicious(false)
 {
 }
 
@@ -147,6 +149,7 @@ AodvExample::Configure (int argc, char **argv)
   cmd.AddValue ("size", "Number of nodes.", size);
   cmd.AddValue ("time", "Simulation time, s.", totalTime);
   cmd.AddValue ("step", "Grid step, m", step);
+  cmd.AddValue ("mal", "Run simulation with second-to-last node maliciuos", malicious);
 
   cmd.Parse (argc, argv);
   return true;
@@ -220,8 +223,10 @@ AodvExample::InstallInternetStack ()
 {
   AodvHelper aodv;
   // you can configure AODV attributes here using aodv.Set(name, value)
-  Ptr<Node> mal_node = nodes.Get (size - 2);
-  mal_node->SetAttribute ("Malicious", BooleanValue (true));
+  if (malicious) {
+    Ptr<Node> mal_node = nodes.Get (size - 2);
+    mal_node->SetAttribute ("Malicious", BooleanValue (true));
+  }
   
   InternetStackHelper stack;
   stack.SetRoutingHelper (aodv); // has effect on the next Install ()
@@ -264,6 +269,8 @@ AodvExample::InstallApplications ()
   // Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
   //                                 Seconds (2.0), &GenerateTraffic, 
   //                                 source, packetSize, numPackets, interPacketInterval);
+
+  //mobility
   // Ptr<Node> node = nodes.Get (size/2);
   // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
   // Simulator::Schedule (Seconds (1.0), &MobilityModel::SetPosition, mob, Vector(100, 50, 0));
