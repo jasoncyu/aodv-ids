@@ -122,7 +122,7 @@ int main (int argc, char **argv)
 AodvExample::AodvExample () :
   size (3),
   step (100),
-  totalTime (3),
+  totalTime (10),
   pcap (true),
   printRoutes (true),
   rss(-80),
@@ -227,8 +227,10 @@ AodvExample::InstallInternetStack ()
   stack.SetRoutingHelper (aodv); // has effect on the next Install ()
   stack.Install (nodes);
 
-
+  // Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+  // Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);
   Ipv4AddressHelper address;
+
   address.SetBase ("10.0.0.0", "255.0.0.0");
   interfaces = address.Assign (devices);
 

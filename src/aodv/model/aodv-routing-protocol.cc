@@ -916,7 +916,7 @@ RoutingProtocol::RecvAodv (Ptr<Socket> socket)
     NS_LOG_FUNCTION (this << socket);
   }
 
-  if (!m_malicious) {
+  // if (!m_malicious) {
     Address sourceAddress;
     Ptr<Packet> packet = socket->RecvFrom (sourceAddress);
     InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom (sourceAddress);
@@ -955,7 +955,7 @@ RoutingProtocol::RecvAodv (Ptr<Socket> socket)
           break;
         }
       }
-    }
+    // }
 }
 
 bool
@@ -1011,10 +1011,16 @@ RoutingProtocol::UpdateRouteToNeighbor (Ipv4Address sender, Ipv4Address receiver
 void
 RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address src)
 {
-  std::cout << "in recvrequest" << std::endl;
-  NS_LOG_FUNCTION (this);
+  if (m_malicious) {
+     NS_LOG_FUNCTION ("malicious " << this);
+  } else {
+    NS_LOG_FUNCTION (this);
+  }
+
   RreqHeader rreqHeader;
   p->RemoveHeader (rreqHeader);
+ 
+  //malicious node ignore RREQs and sends a reply to src that advertises best route
 
   // A node ignores all RREQs received from any node in its blacklist
   RoutingTableEntry toPrev;
@@ -1084,6 +1090,21 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
   NS_LOG_LOGIC (receiver << " receive RREQ with hop count " << static_cast<uint32_t>(rreqHeader.GetHopCount ()) 
                          << " ID " << rreqHeader.GetId ()
                          << " to destination " << rreqHeader.GetDst ());
+
+  if (m_malicious) {
+    NS_LOG_DEBUG("MALICIOUS route reply");
+    RrepHeader rrepHeader ( /*prefixSize=*/ 0, /*hops=*/ 42, /*dst=*/ rreqHeader.GetDst (),
+                                            /*dstSeqNo=*/ 666, /*origin=*/ toOrigin.GetDestination (), /*lifeTime=*/ MyRouteTimeout);
+
+    Ptr<Packet> packet = Create<Packet> ();
+    packet->AddHeader (rrepHeader);
+    TypeHeader tHeader (AODVTYPE_RREP);
+    packet->AddHeader (tHeader);
+    Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
+    NS_ASSERT (socket);
+    socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+    return;
+  }
 
   //  A node generates a RREP if either:
   //  (i)  it is itself the destination,
@@ -1251,6 +1272,12 @@ void
 RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sender)
 {
   NS_LOG_FUNCTION (this << " src " << sender);
+
+  if (m_malicious) {
+    NS_LOG_DEBUG ("MALICIOUS refuse to send normal RREPs");
+    return;
+  }
+
   RrepHeader rrepHeader;
   p->RemoveHeader (rrepHeader);
   Ipv4Address dst = rrepHeader.GetDst ();
