@@ -910,43 +910,50 @@ RoutingProtocol::ScheduleRreqRetry (Ipv4Address dst)
 void
 RoutingProtocol::RecvAodv (Ptr<Socket> socket)
 {
-  NS_LOG_FUNCTION (this << socket);
-  Address sourceAddress;
-  Ptr<Packet> packet = socket->RecvFrom (sourceAddress);
-  InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom (sourceAddress);
-  Ipv4Address sender = inetSourceAddr.GetIpv4 ();
-  Ipv4Address receiver = m_socketAddresses[socket].GetLocal ();
-  NS_LOG_DEBUG ("AODV node " << this << " received a AODV packet from " << sender << " to " << receiver);
+  if (m_malicious) {
+    NS_LOG_FUNCTION ("malicious " << this << socket);
+  } else {
+    NS_LOG_FUNCTION (this << socket);
+  }
 
-  UpdateRouteToNeighbor (sender, receiver);
-  TypeHeader tHeader (AODVTYPE_RREQ);
-  packet->RemoveHeader (tHeader);
-  if (!tHeader.IsValid ())
-    {
-      NS_LOG_DEBUG ("AODV message " << packet->GetUid () << " with unknown type received: " << tHeader.Get () << ". Drop");
-      return; // drop
-    }
-  switch (tHeader.Get ())
-    {
-    case AODVTYPE_RREQ:
+  if (!m_malicious) {
+    Address sourceAddress;
+    Ptr<Packet> packet = socket->RecvFrom (sourceAddress);
+    InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom (sourceAddress);
+    Ipv4Address sender = inetSourceAddr.GetIpv4 ();
+    Ipv4Address receiver = m_socketAddresses[socket].GetLocal ();
+    NS_LOG_DEBUG ("AODV node " << this << " received a AODV packet from " << sender << " to " << receiver);
+
+    UpdateRouteToNeighbor (sender, receiver);
+    TypeHeader tHeader (AODVTYPE_RREQ);
+    packet->RemoveHeader (tHeader);
+    if (!tHeader.IsValid ())
       {
-        RecvRequest (packet, receiver, sender);
-        break;
+        NS_LOG_DEBUG ("AODV message " << packet->GetUid () << " with unknown type received: " << tHeader.Get () << ". Drop");
+        return; // drop
       }
-    case AODVTYPE_RREP:
+    switch (tHeader.Get ())
       {
-        RecvReply (packet, receiver, sender);
-        break;
-      }
-    case AODVTYPE_RERR:
-      {
-        RecvError (packet, sender);
-        break;
-      }
-    case AODVTYPE_RREP_ACK:
-      {
-        RecvReplyAck (sender);
-        break;
+      case AODVTYPE_RREQ:
+        {
+          RecvRequest (packet, receiver, sender);
+          break;
+        }
+      case AODVTYPE_RREP:
+        {
+          RecvReply (packet, receiver, sender);
+          break;
+        }
+      case AODVTYPE_RERR:
+        {
+          RecvError (packet, sender);
+          break;
+        }
+      case AODVTYPE_RREP_ACK:
+        {
+          RecvReplyAck (sender);
+          break;
+        }
       }
     }
 }
@@ -1004,6 +1011,7 @@ RoutingProtocol::UpdateRouteToNeighbor (Ipv4Address sender, Ipv4Address receiver
 void
 RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address src)
 {
+  std::cout << "in recvrequest" << std::endl;
   NS_LOG_FUNCTION (this);
   RreqHeader rreqHeader;
   p->RemoveHeader (rreqHeader);

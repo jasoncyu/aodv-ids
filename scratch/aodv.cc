@@ -4,8 +4,7 @@
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
+ * published by the Free Software Foundation; *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -32,6 +31,27 @@
 #include <cmath>
 
 using namespace ns3;
+void ReceivePacket (Ptr<Socket> socket)
+{
+  NS_LOG_UNCOND ("Received one packet!");
+}
+
+static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
+                             uint32_t pktCount, Time pktInterval )
+{
+  if (pktCount > 0)
+    {
+      socket->Send (Create<Packet> (pktSize));
+      Simulator::Schedule (pktInterval, &GenerateTraffic, 
+                           socket, pktSize,pktCount-1, pktInterval);
+    }
+  else
+    {
+      socket->Close ();
+    }
+}
+
+
 
 /**
  * \brief Test script.
@@ -66,6 +86,11 @@ private:
   bool pcap;
   /// Print routes if true
   bool printRoutes;
+  double rss;  // -dBm
+  uint32_t packetSize; // bytes
+  uint32_t numPackets;
+  double interval; // seconds
+  bool verbose;
   //\}
 
   ///\name network
@@ -97,9 +122,14 @@ int main (int argc, char **argv)
 AodvExample::AodvExample () :
   size (3),
   step (100),
-  totalTime (10),
+  totalTime (3),
   pcap (true),
-  printRoutes (true)
+  printRoutes (true),
+  rss(-80),
+  packetSize(1000),
+  numPackets(1),
+  interval(1.0),
+  verbose(false)
 {
 }
 
@@ -107,7 +137,7 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_FUNCTION);
+  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
 
   SeedManager::SetSeed (12345);
   CommandLine cmd;
@@ -190,7 +220,7 @@ AodvExample::InstallInternetStack ()
 {
   AodvHelper aodv;
   // you can configure AODV attributes here using aodv.Set(name, value)
-  Ptr<Node> mal_node = nodes.Get (size - 1);
+  Ptr<Node> mal_node = nodes.Get (size - 2);
   mal_node->SetAttribute ("Malicious", BooleanValue (true));
   
   InternetStackHelper stack;
@@ -213,6 +243,30 @@ AodvExample::InstallInternetStack ()
 void
 AodvExample::InstallApplications ()
 {
+
+  TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+  Ptr<Socket> recvSink = Socket::CreateSocket (nodes.Get (0), tid);
+  InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
+  recvSink->Bind (local);
+  recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
+
+  Ptr<Socket> source = Socket::CreateSocket (nodes.Get (1), tid);
+  InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
+  source->SetAllowBroadcast (true);
+  source->Connect (remote);
+
+  NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
+
+  Time interPacketInterval = Seconds (interval);
+
+  Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
+                                  Seconds (2.0), &GenerateTraffic, 
+                                  source, packetSize, numPackets, interPacketInterval);
+  Ptr<Node> node = nodes.Get (size/2);
+  Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
+  Simulator::Schedule (Seconds (1.0), &MobilityModel::SetPosition, mob, Vector(100, 50, 0));
+
+
   //original traffic
   // V4PingHelper ping (interfaces.GetAddress (size - 1));
   // ping.SetAttribute ("Verbose", BooleanValue (true));
@@ -220,7 +274,6 @@ AodvExample::InstallApplications ()
   // ApplicationContainer p = ping.Install (nodes.Get (0));
   // p.Start (Seconds (0));
   // p.Stop (Seconds (totalTime) - Seconds (0.001));
-
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);
   // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
