@@ -126,7 +126,8 @@ RoutingProtocol::RoutingProtocol () :
   m_malicious (false),
   m_htimer (Timer::CANCEL_ON_DESTROY),
   m_rreqRateLimitTimer (Timer::CANCEL_ON_DESTROY),
-  m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY)
+  m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY),
+  m_rreqTotal(0)
 {
   if (EnableHello)
     {
@@ -238,6 +239,8 @@ RoutingProtocol::GetTypeId (void)
                    BooleanValue (false),
                    MakeBooleanAccessor (&RoutingProtocol::m_malicious),
                    MakeBooleanChecker ())
+    .AddTraceSource ("rreq_count", "Number of RREQs issued by this node.",
+                    MakeTraceSourceAccessor (&RoutingProtocol::m_rreqTotal))
   ;
   return tid;
 }
@@ -810,8 +813,11 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
                            &RoutingProtocol::SendRequest, this, dst);
       return;
     }
-  else
+  else {
     m_rreqCount++;
+    m_rreqTotal++;
+  }
+
   // Create RREQ header
   RreqHeader rreqHeader;
   rreqHeader.SetDst (dst);
@@ -825,7 +831,7 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
       else
         rreqHeader.SetUnknownSeqno (true);
       rt.SetFlag (IN_SEARCH);
-      m_routingTable.Update (rt);
+      r_routingTable.Update (rt);
     }
   else
     {
@@ -1063,11 +1069,16 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
   RoutingTableEntry toOrigin;
   if (!m_routingTable.LookupRoute (origin, toOrigin))
     {
+      NS_LOG_DEBUG ("Don't have a route yet, so we create a new one");
       Ptr<NetDevice> dev = m_ipv4->GetNetDevice (m_ipv4->GetInterfaceForAddress (receiver));
       RoutingTableEntry newEntry (/*device=*/ dev, /*dst=*/ origin, /*validSeno=*/ true, /*seqNo=*/ rreqHeader.GetOriginSeqno (),
                                               /*iface=*/ m_ipv4->GetAddress (m_ipv4->GetInterfaceForAddress (receiver), 0), /*hops=*/ hop,
                                               /*nextHop*/ src, /*timeLife=*/ Time ((2 * NetTraversalTime - 2 * hop * NodeTraversalTime)));
       m_routingTable.AddRoute (newEntry);
+     // NS_LOG_DEBUG ("Ensure that we can get the interface of origin here");
+     // the below assert is false. 
+     // Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
+     // NS_ASSERT(socket); 
     }
   else
     {
@@ -1093,16 +1104,21 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
 
   if (m_malicious) {
     NS_LOG_DEBUG("MALICIOUS route reply");
-    RrepHeader rrepHeader ( /*prefixSize=*/ 0, /*hops=*/ 42, /*dst=*/ rreqHeader.GetDst (),
-                                            /*dstSeqNo=*/ 666, /*origin=*/ toOrigin.GetDestination (), /*lifeTime=*/ MyRouteTimeout);
+    // RrepHeader rrepHeader ( /*prefixSize=*/ 0, /*hops=*/ 42, /*dst=*/ rreqHeader.GetDst (),
+    //                                         /*dstSeqNo=*/ 666, /*origin=*/ toOrigin.GetDestination (), /*lifeTime=*/ MyRouteTimeout);
 
-    Ptr<Packet> packet = Create<Packet> ();
-    packet->AddHeader (rrepHeader);
-    TypeHeader tHeader (AODVTYPE_RREP);
-    packet->AddHeader (tHeader);
-    Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
-    NS_ASSERT (socket);
-    socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+    // Ptr<Packet> packet = Create<Packet> ();
+    // packet->AddHeader (rrepHeader);
+    // TypeHeader tHeader (AODVTYPE_RREP);
+    // packet->AddHeader (tHeader);
+    // Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
+    // NS_ASSERT (socket);
+    // socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
+
+    //masquerade as destination
+    NS_LOG_DEBUG ("MALICIOUS pretend to be destination and send reply");
+    m_routingTable.LookupRoute (origin, toOrigin);
+    SendReply (rreqHeader, toOrigin);
     return;
   }
 
@@ -1194,11 +1210,18 @@ RoutingProtocol::SendReply (RreqHeader const & rreqHeader, RoutingTableEntry con
   if (!rreqHeader.GetUnknownSeqno () && (rreqHeader.GetDstSeqno () == m_seqNo + 1))
     m_seqNo++;
   RrepHeader rrepHeader ( /*prefixSize=*/ 0, /*hops=*/ 0, /*dst=*/ rreqHeader.GetDst (),
-                                          /*dstSeqNo=*/ m_seqNo, /*origin=*/ toOrigin.GetDestination (), /*lifeTime=*/ MyRouteTimeout);
+                                           /*dstSeqNo=*/ m_seqNo, /*origin=*/ toOrigin.GetDestination (), /*lifeTime=*/ MyRouteTimeout);
+  if (m_malicious) {
+    rrepHeader.SetDstSeqno(9999);
+  }
+
   Ptr<Packet> packet = Create<Packet> ();
   packet->AddHeader (rrepHeader);
   TypeHeader tHeader (AODVTYPE_RREP);
   packet->AddHeader (tHeader);
+
+  Ptr<OutputStreamWrapper> stream = Create<OutputStreamWrapper> ("debug.routes", std::ios::out);
+  toOrigin.Print (stream);
   Ptr<Socket> socket = FindSocketWithInterfaceAddress (toOrigin.GetInterface ());
   NS_ASSERT (socket);
   socket->SendTo (packet, 0, InetSocketAddress (toOrigin.GetNextHop (), AODV_PORT));
