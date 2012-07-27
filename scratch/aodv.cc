@@ -141,7 +141,8 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  LogComponentEnable("V4Ping", LOG_LEVEL_ALL);
 
   SeedManager::SetSeed (12345);
   CommandLine cmd;
@@ -179,10 +180,10 @@ AodvExample::Run ()
 void
 AodvExample::Report (std::ostream & report)
 { 
-  // float meanPacketsReceived;
-  float meanRreqsSent;//, meanRreqsReceived, meanRreqsDropped;
-  // float meanRrepsSent, meanRrepsForwarded, meanRrepsReceived, meanRrepsDropped;
-  // float meanRerrsSent, meanRerrsReceived;
+  // float meanPacketReceived;
+  float meanRreqSent;//, meanRreqReceived, meanRreqDropped;
+  // float meanRrepSent, meanRrepForwarded, meanRrepReceived, meanRrepDropped;
+  // float meanRerrSent, meanRerrReceived;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
     // Ptr<Node> node = nodes.Get (itr);
@@ -190,12 +191,12 @@ AodvExample::Report (std::ostream & report)
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
     Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
      
-    meanRreqsSent += routing->GetRreqSent();
+    meanRreqSent += routing->GetRreqSent();
     // report << "rreq sent from node " << node->GetId () << ": " << routing->GetRreqSent() << std::endl ;
   }
 
-  meanRreqsSent /= size;
-  report << "Mean RREQs sent: " << meanRreqsSent << std::endl;
+  meanRreqSent /= size;
+  report << "Mean RREQ sent: " << meanRreqSent << std::endl;
 }
 
 void

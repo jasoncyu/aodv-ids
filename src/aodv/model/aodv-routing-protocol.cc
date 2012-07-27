@@ -1028,6 +1028,8 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
     NS_LOG_FUNCTION (this);
   }
 
+  rreq_received++; 
+
   RreqHeader rreqHeader;
   p->RemoveHeader (rreqHeader);
  
