@@ -184,6 +184,13 @@
 
 NS_LOG_COMPONENT_DEFINE ("InternetStackHelper");
 
+void
+rreq_received_cb (int32_t oldValue, int32_t newValue)
+{
+  NS_LOG_INFO ("TRACE: rreq_received is " + newValue);
+  // std::cout << "Traced " << oldValue << " to " << newValue << std::endl;
+}
+
 namespace ns3 {
 
 //
@@ -386,6 +393,9 @@ InternetStackHelper::Install (Ptr<Node> node) const
       node->GetAttribute (s, mal);
       Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
       Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);
+
+      ipv4Routing->TraceConnectWithoutContext ("rreq_count", MakeCallback (&rreq_received_cb));
+
 
       if (!mal) { 
         ipv4->SetRoutingProtocol (ipv4Routing);

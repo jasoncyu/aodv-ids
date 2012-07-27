@@ -38,6 +38,9 @@
 #include "ns3/ipv4-routing-protocol.h"
 #include "ns3/ipv4-interface.h"
 #include "ns3/ipv4-l3-protocol.h"
+#include "ns3/traced-value.h"
+#include "ns3/trace-source-accessor.h"
+
 #include <map>
 
 namespace ns3
@@ -88,6 +91,7 @@ public:
   bool GetHelloEnable () const { return EnableHello; }
   void SetBroadcastEnable (bool f) { EnableBroadcast = f; }
   bool GetBroadcastEnable () const { return EnableBroadcast; }
+  uint32_t GetRreqSent () const { return rreq_sent; }
   //\}
 private:
   ///\name Protocol parameters.
@@ -157,6 +161,10 @@ private:
   /// Number of RERRs used for RERR rate control
   uint16_t m_rerrCount;
   bool m_malicious;
+  
+  /* custom values I'm tracking */
+  TracedValue<int32_t> rreq_sent;
+
 
 private:
   /// Start protocol operation
@@ -170,6 +178,7 @@ private:
   * for a single destination MUST utilize a binary exponential backoff.
   */
   void ScheduleRreqRetry (Ipv4Address dst);
+
   /**
    * Set lifetime field in routing table entry to the maximum of existing lifetime and lt, if the entry exists
    * \param addr - destination address

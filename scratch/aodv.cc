@@ -92,6 +92,7 @@ private:
   double interval; // seconds
   bool verbose;
   bool malicious;
+  bool trace;
   //\}
 
   ///\name network
@@ -121,7 +122,7 @@ int main (int argc, char **argv)
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (5),
+  size (25),
   step (100),
   totalTime (10),
   pcap (true),
@@ -131,7 +132,8 @@ AodvExample::AodvExample () :
   numPackets(1),
   interval(1.0),
   verbose(false),
-  malicious(false)
+  malicious(false),
+  trace(true)
 {
 }
 
@@ -169,11 +171,31 @@ AodvExample::Run ()
   Simulator::Stop (Seconds (totalTime));
   Simulator::Run ();
   Simulator::Destroy ();
+
+  ofstream outfile("aodv.report");
+  Report (outfile);
 }
 
 void
-AodvExample::Report (std::ostream &)
+AodvExample::Report (std::ostream & report)
 { 
+  // float meanPacketsReceived;
+  float meanRreqsSent;//, meanRreqsReceived, meanRreqsDropped;
+  // float meanRrepsSent, meanRrepsForwarded, meanRrepsReceived, meanRrepsDropped;
+  // float meanRerrsSent, meanRerrsReceived;
+  
+  for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
+    // Ptr<Node> node = nodes.Get (itr);
+    Ptr<Node> node = *itr;
+    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
+     
+    meanRreqsSent += routing->GetRreqSent();
+    // report << "rreq sent from node " << node->GetId () << ": " << routing->GetRreqSent() << std::endl ;
+  }
+
+  meanRreqsSent /= size;
+  report << "Mean RREQs sent: " << meanRreqsSent << std::endl;
 }
 
 void
@@ -193,8 +215,8 @@ AodvExample::CreateNodes () {
                                  "MinX", DoubleValue (0.0),
                                  "MinY", DoubleValue (0.0),
                                  "DeltaX", DoubleValue (step),
-                                 "DeltaY", DoubleValue (0),
-                                 "GridWidth", UintegerValue (size),
+                                 "DeltaY", DoubleValue (step),
+                                 "GridWidth", UintegerValue (size/5),
                                  "LayoutType", StringValue ("RowFirst"));
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (nodes);

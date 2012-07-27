@@ -37,6 +37,7 @@
 #include "ns3/udp-socket-factory.h"
 #include "ns3/wifi-net-device.h"
 #include "ns3/adhoc-wifi-mac.h"
+
 #include <algorithm>
 #include <limits>
 
@@ -124,10 +125,10 @@ RoutingProtocol::RoutingProtocol () :
   m_rreqCount (0),
   m_rerrCount (0),
   m_malicious (false),
+  rreq_sent (0),
   m_htimer (Timer::CANCEL_ON_DESTROY),
   m_rreqRateLimitTimer (Timer::CANCEL_ON_DESTROY),
-  m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY),
-  m_rreqTotal(0)
+  m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY)
 {
   if (EnableHello)
     {
@@ -239,8 +240,12 @@ RoutingProtocol::GetTypeId (void)
                    BooleanValue (false),
                    MakeBooleanAccessor (&RoutingProtocol::m_malicious),
                    MakeBooleanChecker ())
-    .AddTraceSource ("rreq_count", "Number of RREQs issued by this node.",
-                    MakeTraceSourceAccessor (&RoutingProtocol::m_rreqTotal))
+    // .AddAttribute ("rreq_received", "number of rreqs received",
+    //                UIntegerValue(0), 
+    //                MakeUintegerAccessor (&RoutingProtocol::GetRreqReceived)
+    //                MakeUIntegerChecker<uint32_t> ()
+    // .AddTraceSource ("rreq_count", "Number of RREQs issued by this node.",
+                    // MakeTraceSourceAccessor (&RoutingProtocol::m_rreqTotal))
   ;
   return tid;
 }
@@ -815,7 +820,7 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
     }
   else {
     m_rreqCount++;
-    m_rreqTotal++;
+    rreq_sent++;
   }
 
   // Create RREQ header
@@ -831,7 +836,7 @@ RoutingProtocol::SendRequest (Ipv4Address dst)
       else
         rreqHeader.SetUnknownSeqno (true);
       rt.SetFlag (IN_SEARCH);
-      r_routingTable.Update (rt);
+      m_routingTable.Update (rt);
     }
   else
     {
