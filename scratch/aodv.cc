@@ -22,6 +22,7 @@
 #include "ns3/aodv-module.h"
 #include "ns3/core-module.h"
 #include "ns3/mobility-module.h"
+#include "ns3/applications-module.h"
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
@@ -123,7 +124,7 @@ int main (int argc, char **argv)
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
   size (25),
-  step (100),
+  step (10),
   totalTime (10),
   pcap (true),
   printRoutes (true),
@@ -141,7 +142,7 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
   LogComponentEnable("V4Ping", LOG_LEVEL_ALL);
 
   SeedManager::SetSeed (12345);
@@ -173,17 +174,27 @@ AodvExample::Run ()
   Simulator::Run ();
   Simulator::Destroy ();
 
-  ofstream outfile("aodv.report");
+  ofstream outfile;
+  // outfile << "sample text " << std::endl;
+  outfile.open("aodv.report", ios::app);
+  if (!outfile.is_open ()) {
+    std::cout << "ERROR: could not open file" << std::endl;
+  }
   Report (outfile);
 }
+
 
 void
 AodvExample::Report (std::ostream & report)
 { 
-  // float meanPacketReceived;
-  float meanRreqSent;//, meanRreqReceived, meanRreqDropped;
+  // float meanPacketReceived = 0;
+  float meanRreqSent = 0;//, meanRreqReceived, meanRreqDropped;
   // float meanRrepSent, meanRrepForwarded, meanRrepReceived, meanRrepDropped;
   // float meanRerrSent, meanRerrReceived;
+  
+  //get the application so we can get trace values from it
+  // meanPacketReceived += v4->GetPacketReceived ();
+  // std::cout << "mean packet received: " << meanPacketReceived << std::endl;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
     // Ptr<Node> node = nodes.Get (itr);
@@ -192,6 +203,7 @@ AodvExample::Report (std::ostream & report)
     Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
      
     meanRreqSent += routing->GetRreqSent();
+     
     // report << "rreq sent from node " << node->GetId () << ": " << routing->GetRreqSent() << std::endl ;
   }
 
@@ -202,7 +214,7 @@ AodvExample::Report (std::ostream & report)
 void
 AodvExample::CreateNodes () {
   std::cout << "Creating " << (unsigned)size << " nodes " << step << " m apart.\n";
-  nodes.Create (size);
+    nodes.Create (size);
   // Name nodes
   for (uint32_t i = 0; i < size; ++i)
     {

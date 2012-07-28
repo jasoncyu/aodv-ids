@@ -125,7 +125,14 @@ RoutingProtocol::RoutingProtocol () :
   m_rreqCount (0),
   m_rerrCount (0),
   m_malicious (false),
-  rreq_sent (0),
+  rreq_received(0),
+  rreq_dropped(0),
+  rreq_sent(0),
+  rrep_sent(0),
+  rrep_forwarded(0),
+  rrep_received(0),
+  rerr_sent(0),
+  rerr_received(0),
   m_htimer (Timer::CANCEL_ON_DESTROY),
   m_rreqRateLimitTimer (Timer::CANCEL_ON_DESTROY),
   m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY)
@@ -1152,6 +1159,7 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
       if (toDst.GetNextHop () == src)
         {
           NS_LOG_DEBUG ("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop ());
+          rreq_dropped++;
           return;
         }
       /*
@@ -1177,6 +1185,8 @@ RoutingProtocol::RecvRequest (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address s
   for (std::map<Ptr<Socket>, Ipv4InterfaceAddress>::const_iterator j =
          m_socketAddresses.begin (); j != m_socketAddresses.end (); ++j)
     {
+      //TODO: not sure if this is considered an RREQ send, because it seems to be sending to all addresses available, not just
+      //a given node's neighbors.
       Ptr<Socket> socket = j->first;
       Ipv4InterfaceAddress iface = j->second;
       Ptr<Packet> packet = Create<Packet> ();
@@ -1222,6 +1232,8 @@ RoutingProtocol::SendReply (RreqHeader const & rreqHeader, RoutingTableEntry con
     rrepHeader.SetDstSeqno(9999);
   }
 
+  rrep_sent++;
+
   Ptr<Packet> packet = Create<Packet> ();
   packet->AddHeader (rrepHeader);
   TypeHeader tHeader (AODVTYPE_RREP);
@@ -1238,6 +1250,8 @@ void
 RoutingProtocol::SendReplyByIntermediateNode (RoutingTableEntry & toDst, RoutingTableEntry & toOrigin, bool gratRep)
 {
   NS_LOG_FUNCTION (this);
+
+  rrep_sent++;
   RrepHeader rrepHeader (/*prefix size=*/ 0, /*hops=*/ toDst.GetHop (), /*dst=*/ toDst.GetDestination (), /*dst seqno=*/ toDst.GetSeqNo (),
                                           /*origin=*/ toOrigin.GetDestination (), /*lifetime=*/ toDst.GetLifeTime ());
   /* If the node we received a RREQ for is a neighbor we are
@@ -1302,6 +1316,8 @@ void
 RoutingProtocol::RecvReply (Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sender)
 {
   NS_LOG_FUNCTION (this << " src " << sender);
+
+  rrep_received++;
 
   if (m_malicious) {
     NS_LOG_DEBUG ("MALICIOUS refuse to send normal RREPs");
@@ -1481,6 +1497,8 @@ void
 RoutingProtocol::RecvError (Ptr<Packet> p, Ipv4Address src )
 {
   NS_LOG_FUNCTION (this << " from " << src);
+  rerr_received++;
+
   RerrHeader rerrHeader;
   p->RemoveHeader (rerrHeader);
   std::map<Ipv4Address, uint32_t> dstWithNextHopSrc;

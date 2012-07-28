@@ -25,6 +25,9 @@
 #include "ns3/packet.h"
 #include "ns3/trace-source-accessor.h"
 
+#include <iostream>
+#include <fstream>
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("V4Ping");
@@ -104,8 +107,8 @@ V4Ping::Receive (Ptr<Socket> socket)
   while (m_socket->GetRxAvailable () > 0)
     {
       Address from;
-      std::cout << "in v4ping::receive" << std::endl;
       Ptr<Packet> p = m_socket->RecvFrom (0xffffffff, 0, from);
+      packet_received++;
       NS_LOG_DEBUG ("recv " << p->GetSize () << " bytes");
       NS_ASSERT (InetSocketAddress::IsMatchingType (from));
       InetSocketAddress realFrom = InetSocketAddress::ConvertFrom (from);
@@ -256,6 +259,10 @@ V4Ping::StopApplication (void)
   NS_LOG_FUNCTION (this);
   m_next.Cancel ();
   m_socket->Close ();
+  
+  std::ofstream report("/home/jason/tarballs/ns-allinone-3.13/ns-3.13/aodv.report");
+  report << "packets received: " << packet_received << std::endl;
+  report.close();
 
   if (m_verbose)
     {

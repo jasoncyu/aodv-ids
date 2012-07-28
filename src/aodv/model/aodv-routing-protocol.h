@@ -92,13 +92,11 @@ public:
   void SetBroadcastEnable (bool f) { EnableBroadcast = f; }
   bool GetBroadcastEnable () const { return EnableBroadcast; }
   uint32_t GetRreqSent () const { return rreq_sent; }
-  uint32_t GetPacketReceived () const {return packet_received; }
   uint32_t GetRreqReceived () const {return rreq_received; }
   uint32_t GetRreqDropped () const {return rreq_dropped; }
   uint32_t GetRrepSent () const {return rrep_sent; }
   uint32_t GetRrepForwarded () const {return rrep_forwarded; }
   uint32_t GetRrepReceived () const {return rrep_received; }
-  uint32_t GetRrepDropped () const {return rrep_dropped; }
   uint32_t GetRerrSent () const {return rerr_sent; }
   uint32_t GetRerrReceived () const {return rerr_received; }
   //\}
@@ -172,9 +170,8 @@ private:
   bool m_malicious;
   
   /* custom values I'm tracking */
-  uint32_t packet_received;
   uint32_t rreq_received, rreq_dropped, rreq_sent;
-  uint32_t rrep_sent, rrep_forwarded, rrep_received, rrep_dropped;
+  uint32_t rrep_sent, rrep_forwarded, rrep_received;
   uint32_t rerr_sent, rerr_received;
 
 
