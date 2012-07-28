@@ -187,14 +187,9 @@ AodvExample::Run ()
 void
 AodvExample::Report (std::ostream & report)
 { 
-  // float meanPacketReceived = 0;
-  float meanRreqSent = 0;//, meanRreqReceived, meanRreqDropped;
-  // float meanRrepSent, meanRrepForwarded, meanRrepReceived, meanRrepDropped;
-  // float meanRerrSent, meanRerrReceived;
-  
-  //get the application so we can get trace values from it
-  // meanPacketReceived += v4->GetPacketReceived ();
-  // std::cout << "mean packet received: " << meanPacketReceived << std::endl;
+  float meanRreqSent, meanRreqReceived, meanRreqDropped;
+  float meanRrepSent, meanRrepForwarded, meanRrepReceived;
+  float meanRerrSent, meanRerrReceived;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
     // Ptr<Node> node = nodes.Get (itr);
@@ -203,12 +198,33 @@ AodvExample::Report (std::ostream & report)
     Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
      
     meanRreqSent += routing->GetRreqSent();
-     
-    // report << "rreq sent from node " << node->GetId () << ": " << routing->GetRreqSent() << std::endl ;
-  }
+    meanRreqReceived += routing->GetRreqReceived();
+    meanRreqDropped += routing->GetRreqDropped();
+    meanRrepSent += routing->GetRrepSent();
+    meanRrepForwarded += routing->GetRrepForwarded();
+    meanRrepReceived += routing->GetRrepReceived();
+    meanRerrSent += routing->GetRerrSent();
+    meanRerrReceived += routing->GetRerrReceived();
 
+  }
   meanRreqSent /= size;
+  meanRreqReceived /= size;
+  meanRreqDropped /= size;
+  meanRrepSent /= size;
+  meanRrepForwarded /= size;
+  meanRrepReceived /= size;
+  meanRerrSent /= size;
+  meanRerrReceived /= size;
+
   report << "Mean RREQ sent: " << meanRreqSent << std::endl;
+  report << "Mean RREQ received: " << meanRreqReceived << std::endl;
+  report << "Mean RREQ dropped: " << meanRreqDropped << std::endl;
+  report << "Mean RREP sent: " << meanRrepSent << std::endl;
+  report << "Mean RREP forwarded: " << meanRrepForwarded << std::endl;
+  report << "Mean RREP received: " << meanRrepReceived << std::endl;
+  report << "Mean RERR sent: " << meanRerrSent << std::endl;
+  report << "Mean RERR received: " << meanRerrReceived << std::endl;
+
 }
 
 void
