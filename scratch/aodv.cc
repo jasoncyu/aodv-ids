@@ -30,6 +30,7 @@
 #include "ns3/v4ping-helper.h"
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 using namespace ns3;
 void ReceivePacket (Ptr<Socket> socket)
@@ -71,7 +72,8 @@ public:
   /// Run simulation
   void Run ();
   /// Report results
-  void Report (std::ostream & os);
+  std::map<int, vector<float> > Report (std::ostream & os);
+  void Process(std::map<int, vector<float> >& result);
 
 private:
   ///\name parameters
@@ -180,32 +182,58 @@ AodvExample::Run ()
   if (!outfile.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
-  Report (outfile);
+  std::map<int, vector<float> > result = Report (outfile);
+  Process (result);
 }
 
-
-void
+//returns (node #, traffic vector (vector<float))
+std::map<int, vector<float> >
 AodvExample::Report (std::ostream & report)
 { 
   float meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
   float meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
   float meanRerrSent = 0, meanRerrReceived = 0;
+  std::map<int, vector<float> > result;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
-    // Ptr<Node> node = nodes.Get (itr);
+    float rreqSent = 0, rreqReceived = 0, rreqDropped = 0;
+    float rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
+    float rerrSent = 0, rerrReceived = 0;
+    vector<float> traffic;
+
     Ptr<Node> node = *itr;
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
     Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
-     
-    meanRreqSent += routing->GetRreqSent();
-    meanRreqReceived += routing->GetRreqReceived();
-    meanRreqDropped += routing->GetRreqDropped();
-    meanRrepSent += routing->GetRrepSent();
-    meanRrepForwarded += routing->GetRrepForwarded();
-    meanRrepReceived += routing->GetRrepReceived();
-    meanRerrSent += routing->GetRerrSent();
-    meanRerrReceived += routing->GetRerrReceived();
 
+    rreqSent      = routing->GetRreqSent();
+    rreqReceived  = routing->GetRreqReceived();
+    rreqDropped   = routing->GetRreqDropped();
+    rrepSent      = routing->GetRrepSent();
+    rrepForwarded = routing->GetRrepForwarded();
+    rrepReceived  = routing->GetRrepReceived();
+    rerrSent      = routing->GetRerrSent();
+    rerrReceived  = routing->GetRerrReceived();
+
+    traffic.push_back(rreqSent     );
+    traffic.push_back(rreqReceived );
+    traffic.push_back(rreqDropped  );
+    traffic.push_back(rrepSent     );
+    traffic.push_back(rrepForwarded);
+    traffic.push_back(rrepReceived );
+    traffic.push_back(rerrSent     );
+    traffic.push_back(rerrReceived );
+
+    int id = node->GetId ();
+    result.insert(pair<int, vector<float> >(id, traffic));
+
+    meanRreqSent      += rreqSent;
+    meanRreqReceived  += rreqReceived;
+    meanRreqDropped   += rreqDropped;
+    meanRrepSent      += rreqSent;
+    meanRrepForwarded += rrepForwarded;
+    meanRrepReceived  += rrepReceived;
+    meanRerrSent      += rerrSent;
+    meanRerrReceived  += rerrReceived;
   }
   // meanRreqSent /= size;
   // meanRreqReceived /= size;
@@ -224,6 +252,29 @@ AodvExample::Report (std::ostream & report)
   report << "Mean RREP received: " << meanRrepReceived << std::endl;
   report << "Mean RERR sent: " << meanRerrSent << std::endl;
   report << "Mean RERR received: " << meanRerrReceived << std::endl;
+
+  return result;
+}
+
+
+void
+AodvExample::Process(std::map<int, vector<float> >& result) {
+  std::map<int, vector<float> >::iterator it = result.begin();
+  int num = it->first;
+  vector<float> traffic = it->second;
+
+  std::cout << "first sample\n" 
+            << "Node: " << num << "\n"
+            << "< " << std::endl;
+
+  std::ostringstream oss;
+
+  for (std::vector<float>::iterator traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
+    oss << *traffic_itr;
+  }
+  oss << " >";
+
+  std::cout << oss.str();
 }
 
 void
