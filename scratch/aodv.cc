@@ -124,7 +124,7 @@ int main (int argc, char **argv)
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
   size (25),
-  step (10),
+  step (50),
   totalTime (10),
   pcap (true),
   printRoutes (true),
@@ -142,7 +142,7 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_FUNCTION);
   // LogComponentEnable("V4Ping", LOG_LEVEL_ALL);
 
   SeedManager::SetSeed (12345);
@@ -224,7 +224,6 @@ AodvExample::Report (std::ostream & report)
   report << "Mean RREP received: " << meanRrepReceived << std::endl;
   report << "Mean RERR sent: " << meanRerrSent << std::endl;
   report << "Mean RERR received: " << meanRerrReceived << std::endl;
-
 }
 
 void
@@ -247,7 +246,10 @@ AodvExample::CreateNodes () {
                                  "DeltaY", DoubleValue (step),
                                  "GridWidth", UintegerValue (size/5),
                                  "LayoutType", StringValue ("RowFirst"));
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  // mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
+    "Bounds", RectangleValue (Rectangle (-1.0 * step, 6.0 * step, -1.0*step, 6.0*step)), 
+    "Speed", RandomVariableValue (UniformVariable (2.0, 55.0)));
   mobility.Install (nodes);
 }
 
