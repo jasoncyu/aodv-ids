@@ -176,13 +176,13 @@ AodvExample::Run ()
   Simulator::Run ();
   Simulator::Destroy ();
 
-  ofstream outfile;
+  ofstream report;
   // outfile << "sample text " << std::endl;
-  outfile.open("aodv.report", ios::app);
-  if (!outfile.is_open ()) {
+  report.open("aodv.report", ios::app);
+  if (!report.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
-  std::map<int, vector<float> > result = Report (outfile);
+  std::map<int, vector<float> > result = Report (report);
   Process (result);
 }
 
@@ -257,24 +257,38 @@ AodvExample::Report (std::ostream & report)
 }
 
 
+//takes in the result from Report and adds to aodv.report the 
 void
 AodvExample::Process(std::map<int, vector<float> >& result) {
-  std::map<int, vector<float> >::iterator it = result.begin();
-  int num = it->first;
-  vector<float> traffic = it->second;
-
-  std::cout << "first sample\n" 
-            << "Node: " << num << "\n"
-            << "< " << std::endl;
-
-  std::ostringstream oss;
-
-  for (std::vector<float>::iterator traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
-    oss << *traffic_itr;
+  std::ostringstream os;
+  std::ofstream report;
+  report.open("aodv.report", ios::app);
+  if (!report.is_open ()) {
+    std::cout << "ERROR: could not open file" << std::endl;
   }
-  oss << " >";
 
-  std::cout << oss.str();
+  std::map<int, vector<float> >::iterator result_itr;
+  for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
+    int num = result_itr->first;
+    vector<float> traffic = result_itr->second;
+
+    std::vector<float>::iterator traffic_itr;
+    os << "Node " << num << ": "; 
+
+    for (traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
+      os << *traffic_itr;
+      if (traffic_itr + 1 != traffic.end()) {
+       os << "\t "; 
+      } 
+
+    }
+
+    os << "\n";
+  }
+
+  os << "\n";
+  report << os.str();
+  report.close();
 }
 
 void
