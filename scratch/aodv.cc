@@ -130,7 +130,7 @@ AodvExample::AodvExample () :
   printRoutes (true),
   rss(-80),
   packetSize(1000),
-  numPackets(1),
+  numPackets(4),
   interval(1.0),
   verbose(false),
   malicious(false),
@@ -142,8 +142,8 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
-  LogComponentEnable("V4Ping", LOG_LEVEL_ALL);
+  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+  // LogComponentEnable("V4Ping", LOG_LEVEL_ALL);
 
   SeedManager::SetSeed (12345);
   CommandLine cmd;
@@ -187,9 +187,9 @@ AodvExample::Run ()
 void
 AodvExample::Report (std::ostream & report)
 { 
-  float meanRreqSent, meanRreqReceived, meanRreqDropped;
-  float meanRrepSent, meanRrepForwarded, meanRrepReceived;
-  float meanRerrSent, meanRerrReceived;
+  float meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
+  float meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
+  float meanRerrSent = 0, meanRerrReceived = 0;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
     // Ptr<Node> node = nodes.Get (itr);
@@ -207,14 +207,14 @@ AodvExample::Report (std::ostream & report)
     meanRerrReceived += routing->GetRerrReceived();
 
   }
-  meanRreqSent /= size;
-  meanRreqReceived /= size;
-  meanRreqDropped /= size;
-  meanRrepSent /= size;
-  meanRrepForwarded /= size;
-  meanRrepReceived /= size;
-  meanRerrSent /= size;
-  meanRerrReceived /= size;
+  // meanRreqSent /= size;
+  // meanRreqReceived /= size;
+  // meanRreqDropped /= size;
+  // meanRrepSent /= size;
+  // meanRrepForwarded /= size;
+  // meanRrepReceived /= size;
+  // meanRerrSent /= size;
+  // meanRerrReceived /= size;
 
   report << "Mean RREQ sent: " << meanRreqSent << std::endl;
   report << "Mean RREQ received: " << meanRreqReceived << std::endl;
@@ -308,12 +308,12 @@ AodvExample::InstallApplications ()
   // recvSink->Bind (local);
   // recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
 
-  // Ptr<Socket> source = Socket::CreateSocket (nodes.Get (1), tid);
+  // Ptr<Socket> source = Socket::CreateSocket (nodes.Get (size - 1), tid);
   // InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
   // source->SetAllowBroadcast (true);
   // source->Connect (remote);
 
-  // NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
+  // // NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
 
   // Time interPacketInterval = Seconds (interval);
 
@@ -334,6 +334,7 @@ AodvExample::InstallApplications ()
   ApplicationContainer p = ping.Install (nodes.Get (0));
   p.Start (Seconds (0));
   p.Stop (Seconds (totalTime) - Seconds (0.001));
+
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);
   // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
