@@ -31,6 +31,9 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <functional>
+#include <numeric>
+#include <cassert>
 
 using namespace ns3;
 void ReceivePacket (Ptr<Socket> socket)
@@ -53,6 +56,71 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
     }
 }
 
+struct Cluster{
+  const static int FEATURE_LENGTH = 2;
+    //8 elements for the feature vector
+    vector<float> centroid;
+    std::map<int, vector<float> > samples;
+
+    Cluster() : centroid(), samples() {};
+
+    void add(pair<int, vector<float> >& sample) {
+      samples.insert (sample);
+      if (samples.size() == 0) { centroid = sample.second; }
+      else {
+        samples.insert (sample);
+        updateCentroid();
+      }
+    }
+
+    void updateCentroid() {
+      vector< vector<float> > allTraffic;
+
+      std::map<int, vector<float> >::iterator itr;
+      for (itr = samples.begin(); itr != samples.end(); itr++) {
+        allTraffic.push_back(itr->second);
+      }
+
+      vector<float> zero;
+      for (int i = 0; i <= FEATURE_LENGTH; i++) {
+        zero.push_back(0.0);
+      }
+
+      //tried to use accumulate, but no go
+      // vector<float> sum = accumulate(allTraffic.begin(), allTraffic.end(), zero, addSamples);
+
+      vector<float> sum = zero;
+      for (std::vector<vector<float> >::iterator i = allTraffic.begin(); i != allTraffic.end(); ++i)
+      {
+         addSamples(sum, *i); 
+      }
+
+      //divide by number of elements
+      for (uint32_t i = 0; i < sum.size(); ++i)
+      {
+        sum[i] /= allTraffic.size();
+      }
+
+      centroid = sum; 
+    }
+
+    vector<float> addSamples(vector<float> x, vector<float> y) {
+      vector<float>::iterator itr1 = x.begin();
+      vector<float>::iterator itr2 = y.begin();
+
+      assert (x.size() == y.size());
+
+      vector<float> sum;
+      while (itr1 != x.end() && itr2 != y.end()) {
+        sum.push_back(*itr1 + *itr2);
+        itr1++;
+        itr2++;
+      }
+
+      return sum;
+    }
+  };
+  
 
 /**
  * \brief Test script.
@@ -113,12 +181,23 @@ private:
 
 int main (int argc, char **argv)
 {
-  AodvExample test;
-  if (!test.Configure (argc, argv))
-    NS_FATAL_ERROR ("Configuration failed. Aborted.");
+  // AodvExample test;
+  // if (!test.Configure (argc, argv))
+  //   NS_FATAL_ERROR ("Configuration failed. Aborted.");
 
-  test.Run ();
-  test.Report (std::cout);
+  // test.Run ();
+  // test.Report (std::cout);
+
+  Cluster c;
+  vector<float> sample;
+  sample.push_back(0.0);
+  sample.push_back(1.0);
+
+  pair<int, vector<float> > entry;
+  entry.first = 0;
+  entry.second = sample;
+
+  c.add(sample);
   return 0;
 }
 
@@ -260,6 +339,7 @@ AodvExample::Report (std::ostream & report)
 //takes in the result from Report and adds to aodv.report the 
 void
 AodvExample::Process(std::map<int, vector<float> >& result) {
+  //output individual data to report file
   std::ostringstream os;
   std::ofstream report;
   report.open("aodv.report", ios::app);
@@ -289,6 +369,12 @@ AodvExample::Process(std::map<int, vector<float> >& result) {
   os << "\n";
   report << os.str();
   report.close();
+
+  //cluster algorithm
+  // std::map<int, vector<float> >::iterator result_itr;
+  //a cluster has all the traffic and the centroid as well
+  // std::pair<float, floa
+
 }
 
 void
