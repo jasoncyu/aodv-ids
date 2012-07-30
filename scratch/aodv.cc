@@ -338,6 +338,29 @@ AodvExample::InstallApplications ()
   p.Start (Seconds (0));
   p.Stop (Seconds (totalTime) - Seconds (0.001));
 
+
+  //randomized lots of traffic
+  //every 0.5 seconds, two nodes are randomly selected and ping traffic is sent between them.
+  //Traffic goes for 5 seconds before stopping.
+
+  UniformVariable r = UniformVariable(0, size - 1);
+
+  for (double startTime = 0; startTime <= totalTime; startTime += 0.5) {
+    uint32_t destNode = r.GetInteger(0, size - 1);
+    V4PingHelper ping (interfaces.GetAddress (destNode));
+    ping.SetAttribute ("Verbose", BooleanValue (true));
+    ping.SetAttribute ("Interval", TimeValue (Seconds (interval)));
+
+    uint32_t sourceNode = r.GetInteger(0, size - 1);
+
+    while (sourceNode == destNode) {
+      sourceNode = r.GetInteger(0, size - 1);
+    } 
+
+    ApplicationContainer p = ping.Install (nodes.Get (sourceNode));
+    p.Start (Seconds (0));
+    p.Stop (Seconds (totalTime) - Seconds (0.001));
+  }
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);
   // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
