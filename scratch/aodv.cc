@@ -53,7 +53,6 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 }
 
 
-
 /**
  * \brief Test script.
  * 
@@ -124,14 +123,15 @@ int main (int argc, char **argv)
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
   size (25),
+  //100 is too large, all packets dropped
   step (50),
   totalTime (10),
   pcap (true),
   printRoutes (true),
   rss(-80),
   packetSize(1000),
-  numPackets(4),
-  interval(1.0),
+  numPackets(300),
+  interval(0.5),
   verbose(false),
   malicious(false),
   trace(true)
@@ -244,7 +244,7 @@ AodvExample::CreateNodes () {
                                  "MinY", DoubleValue (0.0),
                                  "DeltaX", DoubleValue (step),
                                  "DeltaY", DoubleValue (step),
-                                 "GridWidth", UintegerValue (size/5),
+                                 "GridWidth", UintegerValue (5),
                                  "LayoutType", StringValue ("RowFirst"));
   // mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
@@ -332,6 +332,7 @@ AodvExample::InstallApplications ()
   //original traffic
   V4PingHelper ping (interfaces.GetAddress (size - 1));
   ping.SetAttribute ("Verbose", BooleanValue (true));
+  ping.SetAttribute ("Interval", TimeValue (Seconds (interval)));
 
   ApplicationContainer p = ping.Install (nodes.Get (0));
   p.Start (Seconds (0));
