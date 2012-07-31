@@ -359,10 +359,9 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   {
     os << stddev[i] << "\t ";
   }
-
+  os <<"\n";
   //normalization
   //go through all traffic vectors and create map with normalized traffic
-  vector<Cluster> clusters;
   map<int, vector<double> > norm_results;
 
   for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
@@ -372,7 +371,6 @@ AodvExample::Process(std::map<int, vector<double> > result) {
 
     for (uint32_t i = 0; i < traffic.size(); i++) {
       norm_traffic[i] = (traffic[i] - mean[i])/stddev[i];
-      std::cout<< "i: " << i << std::endl;
     }
 
     norm_results.insert(pair<int, vector<double> >(num, norm_traffic));
@@ -380,9 +378,26 @@ AodvExample::Process(std::map<int, vector<double> > result) {
 
   //normalized traffic report output
 
-  os << "NORMALIZED TRAFFIC" << std::endl;
-  Log(os);
   LogTraffic(norm_results);
+  
+  vector<Cluster> clusters;
+  map<int, vector<double> >::iterator norm_results_itr;
+
+  for (norm_results_itr = norm_results.begin(); norm_results_itr != norm_results.end(); norm_results_itr++) {
+    if (clusters.empty()) {
+      Cluster c = Cluster();
+      pair<int, vector<double> > sample = *norm_results_itr; 
+      c.add(sample);
+      std::cout << "Centroid: ";
+      for (uint32_t i = 0; i < c.centroid.size(); ++i)
+      {
+        std::cout << c.centroid[i] << " ";
+      }
+      clusters.push_back(c);
+    }
+  }
+
+  Log(os);
 }
 
 void
