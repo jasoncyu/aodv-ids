@@ -261,7 +261,8 @@ V4Ping::StopApplication (void)
   m_socket->Close ();
   
   std::ofstream report("/home/jason/tarballs/ns-allinone-3.13/ns-3.13/aodv.report");
-  report << "packets received: " << packet_received << std::endl;
+  report << "output from v4ping.cc" << std::endl;
+  report << "packets received:\n " << packet_received << std::endl;
   report.close();
 
   if (m_verbose)

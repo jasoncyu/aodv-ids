@@ -80,7 +80,7 @@ public:
   /// Run simulation
   void Run ();
   /// Report results
-  std::map<int, vector<double> > Report ();
+  std::map<int, vector<double> > Stats ();
   void Process(std::map<int, vector<double> >& result);
   void Log(std::ostringstream& os);
 
@@ -127,7 +127,6 @@ int main (int argc, char **argv)
     NS_FATAL_ERROR ("Configuration failed. Aborted.");
 
   test.Run ();
-  test.Report ();
 
   // Cluster c;
   // vector<double> sample;
@@ -196,7 +195,7 @@ AodvExample::Run ()
   Simulator::Run ();
   Simulator::Destroy ();
 
-  std::map<int, vector<double> > result = Report();
+  std::map<int, vector<double> > result = Stats();
   Process (result);
 }
 
@@ -214,7 +213,7 @@ AodvExample::Log(std::ostringstream& os)
 
 //returns (node #, traffic vector (vector<double))
 std::map<int, vector<double> >
-AodvExample::Report()
+AodvExample::Stats()
 { 
   double meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
   double meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
