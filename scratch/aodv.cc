@@ -81,8 +81,9 @@ public:
   void Run ();
   /// Report results
   std::map<int, vector<double> > Stats ();
-  void Process(std::map<int, vector<double> >& result);
+  void Process(std::map<int, vector<double> > result);
   void Log(std::ostringstream& os);
+  void LogTraffic(std::map<int, vector<double> > result);
 
 private:
   ///\name parameters
@@ -287,10 +288,10 @@ AodvExample::Stats()
 }
 
 
-//takes in the result from Report and adds to aodv.report the 
+
 void
-AodvExample::Process(std::map<int, vector<double> >& result) {
-  //output individual data to report file
+AodvExample::LogTraffic(std::map<int, vector<double> > result)
+{
   std::ostringstream os;
 
   std::map<int, vector<double> >::iterator result_itr;
@@ -313,19 +314,21 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
     os << "\n";
   }
 
-  //cluster algorithm
-  // std::map<int, vector<double> >::iterator result_itr;
-  //a cluster has all the traffic and the centroid as well
-  // std::pair<double, floa
-  vector<Cluster> clusters;
+  Log(os);
+}
 
-  //normalization
+//cluster algorithm
+void
+AodvExample::Process(std::map<int, vector<double> > result) {
+  LogTraffic(result);
+
   vector<double> mean, stddev;
-
   //go through the "position"th element of all the vectors and get the mean and push it onto the mean vector
   //similarly for double, through all positions
   //put it on the end of the ithElement array
-  double ithElements[100];
+  double ithElements[size];
+  std::map<int, vector<double> >::iterator result_itr;
+
   for (uint32_t position = 0; position < Cluster::FEATURE_LENGTH; position++) {
     uint32_t i = 0;
     for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
@@ -341,6 +344,8 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
     stddev.push_back(single_sd);
   }
 
+  //log means and sd's
+  ostringstream os;
   os << "Means: ";
 
   for (uint32_t i = 0; i < mean.size(); ++i)
@@ -355,7 +360,29 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
     os << stddev[i] << "\t ";
   }
 
+  //normalization
+  //go through all traffic vectors and create map with normalized traffic
+  vector<Cluster> clusters;
+  map<int, vector<double> > norm_results;
+
+  for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
+    vector<double> norm_traffic(Cluster::FEATURE_LENGTH);
+    int num = result_itr->first;
+    vector<double> traffic = result_itr->second;
+
+    for (uint32_t i = 0; i < traffic.size(); i++) {
+      norm_traffic[i] = (traffic[i] - mean[i])/stddev[i];
+      std::cout<< "i: " << i << std::endl;
+    }
+
+    norm_results.insert(pair<int, vector<double> >(num, norm_traffic));
+  }
+
+  //normalized traffic report output
+
+  os << "NORMALIZED TRAFFIC" << std::endl;
   Log(os);
+  LogTraffic(norm_results);
 }
 
 void
