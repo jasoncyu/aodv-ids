@@ -80,8 +80,9 @@ public:
   /// Run simulation
   void Run ();
   /// Report results
-  std::map<int, vector<double> > Report (std::ostream & os);
+  std::map<int, vector<double> > Report ();
   void Process(std::map<int, vector<double> >& result);
+  void Log(std::ostringstream& os);
 
 private:
   ///\name parameters
@@ -126,7 +127,7 @@ int main (int argc, char **argv)
     NS_FATAL_ERROR ("Configuration failed. Aborted.");
 
   test.Run ();
-  test.Report (std::cout);
+  test.Report ();
 
   // Cluster c;
   // vector<double> sample;
@@ -163,7 +164,7 @@ bool
 AodvExample::Configure (int argc, char **argv)
 {
   // Enable AODV logs by default. Comment this if too noisy
-  LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_FUNCTION);
+  // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_FUNCTION);
   // LogComponentEnable("V4Ping", LOG_LEVEL_ALL);
 
   SeedManager::SetSeed (12345);
@@ -195,19 +196,25 @@ AodvExample::Run ()
   Simulator::Run ();
   Simulator::Destroy ();
 
-  ofstream report;
-  // outfile << "sample text " << std::endl;
+  std::map<int, vector<double> > result = Report();
+  Process (result);
+}
+
+void 
+AodvExample::Log(std::ostringstream& os) 
+{
+  std::ofstream report;
   report.open("aodv.report", ios::app);
   if (!report.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
-  std::map<int, vector<double> > result = Report (report);
-  Process (result);
+  report << os.str() << std::endl; 
+  report.close();
 }
 
 //returns (node #, traffic vector (vector<double))
 std::map<int, vector<double> >
-AodvExample::Report (std::ostream & report)
+AodvExample::Report()
 { 
   double meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
   double meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
@@ -263,14 +270,19 @@ AodvExample::Report (std::ostream & report)
   // meanRerrSent /= size;
   // meanRerrReceived /= size;
 
-  report << "Mean RREQ sent: " << meanRreqSent << std::endl;
-  report << "Mean RREQ received: " << meanRreqReceived << std::endl;
-  report << "Mean RREQ dropped: " << meanRreqDropped << std::endl;
-  report << "Mean RREP sent: " << meanRrepSent << std::endl;
-  report << "Mean RREP forwarded: " << meanRrepForwarded << std::endl;
-  report << "Mean RREP received: " << meanRrepReceived << std::endl;
-  report << "Mean RERR sent: " << meanRerrSent << std::endl;
-  report << "Mean RERR received: " << meanRerrReceived << std::endl;
+  ostringstream os;
+
+
+  os << "Mean RREQ sent: " << meanRreqSent << std::endl
+     << "Mean RREQ received: " << meanRreqReceived << std::endl
+     << "Mean RREQ dropped: " << meanRreqDropped << std::endl
+     << "Mean RREP sent: " << meanRrepSent << std::endl
+     << "Mean RREP forwarded: " << meanRrepForwarded << std::endl
+     << "Mean RREP received: " << meanRrepReceived << std::endl
+     << "Mean RERR sent: " << meanRerrSent << std::endl
+     << "Mean RERR received: " << meanRerrReceived << std::endl;
+
+  Log(os);
 
   return result;
 }
@@ -281,11 +293,6 @@ void
 AodvExample::Process(std::map<int, vector<double> >& result) {
   //output individual data to report file
   std::ostringstream os;
-  std::ofstream report;
-  report.open("aodv.report", ios::app);
-  if (!report.is_open ()) {
-    std::cout << "ERROR: could not open file" << std::endl;
-  }
 
   std::map<int, vector<double> >::iterator result_itr;
   for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
@@ -306,10 +313,8 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
 
     os << "\n";
   }
-
   os << "\n";
-  report << os.str();
-  report.close();
+  Log(os);
 
   //cluster algorithm
   // std::map<int, vector<double> >::iterator result_itr;
@@ -323,7 +328,7 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
   //go through the "position"th element of all the vectors and get the mean and push it onto the mean vector
   //similarly for double, through all positions
   //put it on the end of the ithElement array
-  double ithElements[Cluster::FEATURE_LENGTH];
+  double ithElements[100];
   for (uint32_t position = 0; position < Cluster::FEATURE_LENGTH; position++) {
     uint32_t i = 0;
     for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
@@ -331,10 +336,12 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
 
       ithElements[i++] = traffic[position];
     }
-    assert (i == Cluster::FEATURE_LENGTH + 1);
+    assert (i == size);
 
-    mean.push_back(gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH));
-    stddev.push_back(gsl_stats_sd(ithElements, 1, Cluster::FEATURE_LENGTH));
+    double single_mean = gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH);
+    mean.push_back(single_mean);
+    double single_sd = gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH);
+    stddev.push_back(single_sd);
   }
 }
 
@@ -442,13 +449,13 @@ AodvExample::InstallApplications ()
 
 
   //original traffic
-  V4PingHelper ping (interfaces.GetAddress (size - 1));
-  ping.SetAttribute ("Verbose", BooleanValue (true));
-  ping.SetAttribute ("Interval", TimeValue (Seconds (interval)));
+  // V4PingHelper ping (interfaces.GetAddress (size - 1));
+  // ping.SetAttribute ("Verbose", BooleanValue (true));
+  // ping.SetAttribute ("Interval", TimeValue (Seconds (interval)));
 
-  ApplicationContainer p = ping.Install (nodes.Get (0));
-  p.Start (Seconds (0));
-  p.Stop (Seconds (totalTime) - Seconds (0.001));
+  // ApplicationContainer p = ping.Install (nodes.Get (0));
+  // p.Start (Seconds (0));
+  // p.Stop (Seconds (totalTime) - Seconds (0.001));
 
 
   //randomized lots of traffic
@@ -460,7 +467,7 @@ AodvExample::InstallApplications ()
   for (double startTime = 0; startTime <= totalTime; startTime += 0.5) {
     uint32_t destNode = r.GetInteger(0, size - 1);
     V4PingHelper ping (interfaces.GetAddress (destNode));
-    ping.SetAttribute ("Verbose", BooleanValue (true));
+    // ping.SetAttribute ("Verbose", BooleanValue (true));
     ping.SetAttribute ("Interval", TimeValue (Seconds (interval)));
 
     uint32_t sourceNode = r.GetInteger(0, size - 1);
