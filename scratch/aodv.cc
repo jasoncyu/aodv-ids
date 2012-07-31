@@ -28,13 +28,17 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/wifi-module.h" 
 #include "ns3/v4ping-helper.h"
+
 #include <iostream>
 #include <cmath>
 #include <vector>
 #include <functional>
 #include <numeric>
 #include <cassert>
-
+#include <gsl/gsl_statistics.h>
+#include <gsl/gsl_cdf.h>
+//I made these
+#include "cluster.h"
 using namespace ns3;
 void ReceivePacket (Ptr<Socket> socket)
 {
@@ -45,7 +49,7 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
                              uint32_t pktCount, Time pktInterval )
 {
   if (pktCount > 0)
-    {
+  {
       socket->Send (Create<Packet> (pktSize));
       Simulator::Schedule (pktInterval, &GenerateTraffic, 
                            socket, pktSize,pktCount-1, pktInterval);
@@ -56,70 +60,6 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
     }
 }
 
-struct Cluster{
-  const static int FEATURE_LENGTH = 2;
-    //8 elements for the feature vector
-    vector<float> centroid;
-    std::map<int, vector<float> > samples;
-
-    Cluster() : centroid(), samples() {};
-
-    void add(pair<int, vector<float> >& sample) {
-      samples.insert (sample);
-      if (samples.size() == 0) { centroid = sample.second; }
-      else {
-        samples.insert (sample);
-        updateCentroid();
-      }
-    }
-
-    void updateCentroid() {
-      vector< vector<float> > allTraffic;
-
-      std::map<int, vector<float> >::iterator itr;
-      for (itr = samples.begin(); itr != samples.end(); itr++) {
-        allTraffic.push_back(itr->second);
-      }
-
-      vector<float> zero;
-      for (int i = 0; i <= FEATURE_LENGTH; i++) {
-        zero.push_back(0.0);
-      }
-
-      //tried to use accumulate, but no go
-      // vector<float> sum = accumulate(allTraffic.begin(), allTraffic.end(), zero, addSamples);
-
-      vector<float> sum = zero;
-      for (std::vector<vector<float> >::iterator i = allTraffic.begin(); i != allTraffic.end(); ++i)
-      {
-         addSamples(sum, *i); 
-      }
-
-      //divide by number of elements
-      for (uint32_t i = 0; i < sum.size(); ++i)
-      {
-        sum[i] /= allTraffic.size();
-      }
-
-      centroid = sum; 
-    }
-
-    vector<float> addSamples(vector<float> x, vector<float> y) {
-      vector<float>::iterator itr1 = x.begin();
-      vector<float>::iterator itr2 = y.begin();
-
-      assert (x.size() == y.size());
-
-      vector<float> sum;
-      while (itr1 != x.end() && itr2 != y.end()) {
-        sum.push_back(*itr1 + *itr2);
-        itr1++;
-        itr2++;
-      }
-
-      return sum;
-    }
-  };
   
 
 /**
@@ -140,8 +80,8 @@ public:
   /// Run simulation
   void Run ();
   /// Report results
-  std::map<int, vector<float> > Report (std::ostream & os);
-  void Process(std::map<int, vector<float> >& result);
+  std::map<int, vector<double> > Report (std::ostream & os);
+  void Process(std::map<int, vector<double> >& result);
 
 private:
   ///\name parameters
@@ -181,23 +121,23 @@ private:
 
 int main (int argc, char **argv)
 {
-  // AodvExample test;
-  // if (!test.Configure (argc, argv))
-  //   NS_FATAL_ERROR ("Configuration failed. Aborted.");
+  AodvExample test;
+  if (!test.Configure (argc, argv))
+    NS_FATAL_ERROR ("Configuration failed. Aborted.");
 
-  // test.Run ();
-  // test.Report (std::cout);
+  test.Run ();
+  test.Report (std::cout);
 
-  Cluster c;
-  vector<float> sample;
-  sample.push_back(0.0);
-  sample.push_back(1.0);
+  // Cluster c;
+  // vector<double> sample;
+  // sample.push_back(0.0);
+  // sample.push_back(1.0);
 
-  pair<int, vector<float> > entry;
-  entry.first = 0;
-  entry.second = sample;
+  // pair<int, vector<double> > entry;
+  // entry.first = 0;
+  // entry.second = sample;
 
-  c.add(sample);
+  // c.add(entry);
   return 0;
 }
 
@@ -261,24 +201,24 @@ AodvExample::Run ()
   if (!report.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
-  std::map<int, vector<float> > result = Report (report);
+  std::map<int, vector<double> > result = Report (report);
   Process (result);
 }
 
-//returns (node #, traffic vector (vector<float))
-std::map<int, vector<float> >
+//returns (node #, traffic vector (vector<double))
+std::map<int, vector<double> >
 AodvExample::Report (std::ostream & report)
 { 
-  float meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
-  float meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
-  float meanRerrSent = 0, meanRerrReceived = 0;
-  std::map<int, vector<float> > result;
+  double meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
+  double meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
+  double meanRerrSent = 0, meanRerrReceived = 0;
+  std::map<int, vector<double> > result;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
-    float rreqSent = 0, rreqReceived = 0, rreqDropped = 0;
-    float rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
-    float rerrSent = 0, rerrReceived = 0;
-    vector<float> traffic;
+    double rreqSent = 0, rreqReceived = 0, rreqDropped = 0;
+    double rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
+    double rerrSent = 0, rerrReceived = 0;
+    vector<double> traffic;
 
     Ptr<Node> node = *itr;
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
@@ -303,7 +243,7 @@ AodvExample::Report (std::ostream & report)
     traffic.push_back(rerrReceived );
 
     int id = node->GetId ();
-    result.insert(pair<int, vector<float> >(id, traffic));
+    result.insert(pair<int, vector<double> >(id, traffic));
 
     meanRreqSent      += rreqSent;
     meanRreqReceived  += rreqReceived;
@@ -338,7 +278,7 @@ AodvExample::Report (std::ostream & report)
 
 //takes in the result from Report and adds to aodv.report the 
 void
-AodvExample::Process(std::map<int, vector<float> >& result) {
+AodvExample::Process(std::map<int, vector<double> >& result) {
   //output individual data to report file
   std::ostringstream os;
   std::ofstream report;
@@ -347,12 +287,13 @@ AodvExample::Process(std::map<int, vector<float> >& result) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
 
-  std::map<int, vector<float> >::iterator result_itr;
+  std::map<int, vector<double> >::iterator result_itr;
   for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
     int num = result_itr->first;
-    vector<float> traffic = result_itr->second;
+    vector<double> traffic = result_itr->second;
 
-    std::vector<float>::iterator traffic_itr;
+
+    std::vector<double>::iterator traffic_itr;
     os << "Node " << num << ": "; 
 
     for (traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
@@ -371,10 +312,30 @@ AodvExample::Process(std::map<int, vector<float> >& result) {
   report.close();
 
   //cluster algorithm
-  // std::map<int, vector<float> >::iterator result_itr;
+  // std::map<int, vector<double> >::iterator result_itr;
   //a cluster has all the traffic and the centroid as well
-  // std::pair<float, floa
+  // std::pair<double, floa
+  vector<Cluster> clusters;
 
+  //normalization
+  vector<double> mean, stddev;
+
+  //go through the "position"th element of all the vectors and get the mean and push it onto the mean vector
+  //similarly for double, through all positions
+  //put it on the end of the ithElement array
+  double ithElements[Cluster::FEATURE_LENGTH];
+  for (uint32_t position = 0; position < Cluster::FEATURE_LENGTH; position++) {
+    uint32_t i = 0;
+    for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
+      vector<double> traffic = result_itr->second;
+
+      ithElements[i++] = traffic[position];
+    }
+    assert (i == Cluster::FEATURE_LENGTH + 1);
+
+    mean.push_back(gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH));
+    stddev.push_back(gsl_stats_sd(ithElements, 1, Cluster::FEATURE_LENGTH));
+  }
 }
 
 void
