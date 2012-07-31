@@ -312,8 +312,6 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
 
     os << "\n";
   }
-  os << "\n";
-  Log(os);
 
   //cluster algorithm
   // std::map<int, vector<double> >::iterator result_itr;
@@ -339,9 +337,25 @@ AodvExample::Process(std::map<int, vector<double> >& result) {
 
     double single_mean = gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH);
     mean.push_back(single_mean);
-    double single_sd = gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH);
+    double single_sd = gsl_stats_sd(ithElements, 1, Cluster::FEATURE_LENGTH);
     stddev.push_back(single_sd);
   }
+
+  os << "Means: ";
+
+  for (uint32_t i = 0; i < mean.size(); ++i)
+  {
+    os << mean[i] << "\t ";
+  }
+
+  os << "\nStd Devs: ";
+
+  for (uint32_t i = 0; i < stddev.size(); ++i)
+  {
+    os << stddev[i] << "\t ";
+  }
+
+  Log(os);
 }
 
 void
