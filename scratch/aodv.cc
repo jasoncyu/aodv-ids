@@ -293,7 +293,7 @@ AodvExample::Stats()
 }
 
 
-
+//takes a sample
 void
 AodvExample::LogTraffic(std::map<int, vector<double> > result)
 {
@@ -417,6 +417,7 @@ AodvExample::Process(std::map<int, vector<double> > result) {
         //make a new cluster with the new sample
         Cluster c = Cluster();
         c.add(sample);
+        clusters.push_back(c);
       }
     }
   }
@@ -441,6 +442,20 @@ AodvExample::Process(std::map<int, vector<double> > result) {
     } else {
       clusters_itr->anomalous = false;
     }
+  }
+
+  os << "number of clusters: " << clusters.size() << std::endl;
+
+  for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+    if (clusters_itr->anomalous) {
+      std::map<int, vector<double> >::iterator samples_itr;
+      std::map<int, vector<double> > samples = clusters_itr->samples;
+
+      for (samples_itr = samples.begin(); samples_itr != samples.end(); samples_itr++) {
+        os << "Node: " << samples_itr->first << " anomalous" << std::endl;
+      }
+    }
+    os << "not anomalous\n";
   }
   Log(os);
 }
