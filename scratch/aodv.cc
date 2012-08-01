@@ -1,7 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2009 IITP RAS
- *
+ * Copyright (c) 2009 IITP RAS *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation; *
@@ -381,22 +380,65 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   LogTraffic(norm_results);
   
   vector<Cluster> clusters;
+  vector<Cluster>::iterator clusters_itr;
+  //tolerance
+  double w = 10;
   map<int, vector<double> >::iterator norm_results_itr;
 
   for (norm_results_itr = norm_results.begin(); norm_results_itr != norm_results.end(); norm_results_itr++) {
+    pair<int, vector<double> > sample = *norm_results_itr; 
+
     if (clusters.empty()) {
+      //if sample is first cluster, then we add it to the cluster set
       Cluster c = Cluster();
-      pair<int, vector<double> > sample = *norm_results_itr; 
       c.add(sample);
-      std::cout << "Centroid: ";
-      for (uint32_t i = 0; i < c.centroid.size(); ++i)
-      {
-        std::cout << c.centroid[i] << " ";
-      }
       clusters.push_back(c);
+    } else {
+      vector<double> traffic = norm_results_itr->second;
+      Cluster closest_cluster = clusters[0];
+      double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+
+      for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+        double new_distance = Cluster::Distance(traffic, *clusters_itr);
+        if (new_distance < closest_cluster_distance) {
+          closest_cluster = *clusters_itr;
+          closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+        }
+      }
+
+      if (closest_cluster_distance < w) {
+        //add sample to this cluster
+        closest_cluster.add(sample);
+      } else {
+        //make a new cluster with the new sample
+        Cluster c = Cluster();
+        c.add(sample);
+      }
     }
   }
 
+  //cluster labelling
+  for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+    //c_max
+    pair<int, vector<double> > outermost_sample = clusters_itr->outermost();
+    vector<double> outermost_sample_traffic = outermost_sample.second;
+    //w_k
+    //TODO: Figure out what this is used for
+    // double outermost_sample_width = Cluster::Distance(outermost_sample_traffic, *clusters_itr);
+
+    //If the number of samples in a cluster over the total number of samples is less than the
+    //threshold, we label as anomalous
+
+    double threshold = 0.10;
+    uint32_t cluster_size = clusters_itr->size();
+    double criteria = cluster_size/size;
+
+    if (criteria < threshold) {
+      clusters_itr->anomalous = true;
+    } else {
+      clusters_itr->anomalous = false;
+    }
+  }
   Log(os);
 }
 
