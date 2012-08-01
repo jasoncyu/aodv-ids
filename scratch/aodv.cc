@@ -25,9 +25,8 @@
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
-#include "ns3/wifi-module.h" 
+#include "ns3/wifi-module.h"
 #include "ns3/v4ping-helper.h"
-
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -104,6 +103,11 @@ private:
   bool verbose;
   bool malicious;
   bool trace;
+
+  //simulation parameters
+  double threshold;
+  //threshold
+  double w;
   //\}
 
   ///\name network
@@ -155,7 +159,9 @@ AodvExample::AodvExample () :
   interval(0.5),
   verbose(false),
   malicious(false),
-  trace(true)
+  trace(true),
+  threshold(0.10),
+  w(10.0)
 {
 }
 
@@ -260,14 +266,14 @@ AodvExample::Stats()
     meanRerrSent      += rerrSent;
     meanRerrReceived  += rerrReceived;
   }
-  // meanRreqSent /= size;
-  // meanRreqReceived /= size;
-  // meanRreqDropped /= size;
-  // meanRrepSent /= size;
-  // meanRrepForwarded /= size;
-  // meanRrepReceived /= size;
-  // meanRerrSent /= size;
-  // meanRerrReceived /= size;
+  meanRreqSent /= size;
+  meanRreqReceived /= size;
+  meanRreqDropped /= size;
+  meanRrepSent /= size;
+  meanRrepForwarded /= size;
+  meanRrepReceived /= size;
+  meanRerrSent /= size;
+  meanRerrReceived /= size;
 
   ostringstream os;
 
@@ -381,8 +387,6 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   
   vector<Cluster> clusters;
   vector<Cluster>::iterator clusters_itr;
-  //tolerance
-  double w = 10;
   map<int, vector<double> >::iterator norm_results_itr;
 
   for (norm_results_itr = norm_results.begin(); norm_results_itr != norm_results.end(); norm_results_itr++) {
@@ -429,7 +433,6 @@ AodvExample::Process(std::map<int, vector<double> > result) {
     //If the number of samples in a cluster over the total number of samples is less than the
     //threshold, we label as anomalous
 
-    double threshold = 0.10;
     uint32_t cluster_size = clusters_itr->size();
     double criteria = cluster_size/size;
 
@@ -560,7 +563,6 @@ AodvExample::InstallApplications ()
   //Traffic goes for 5 seconds before stopping.
 
   UniformVariable r = UniformVariable(0, size - 1);
-
   for (double startTime = 0; startTime <= totalTime; startTime += 0.5) {
     uint32_t destNode = r.GetInteger(0, size - 1);
     V4PingHelper ping (interfaces.GetAddress (destNode));
