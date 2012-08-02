@@ -20,16 +20,19 @@ struct Cluster{
   Cluster() : centroid(), samples() {};
 
   void add(std::pair<int, std::vector<double> >& sample) {
-    samples.insert (sample);
-    if (samples.size() == 0) { centroid = sample.second; }
-    else {
       samples.insert (sample);
       updateCentroid();
-    }
   }
 
   
   void updateCentroid() {
+
+    if (samples.size() == 1) {
+      std::map<int, std::vector<double> >::iterator samples_iterator = samples.begin();
+      centroid = samples_iterator->second;
+      return;
+    }
+
     //aggregates traffic from each sample into one std::vector
     std::vector< std::vector<double> > allTraffic;
 
@@ -40,12 +43,9 @@ struct Cluster{
 
     //std::vector of all zeros
     std::vector<double> zero;
-    for (uint32_t i = 0; i <= FEATURE_LENGTH; i++) {
+    for (uint32_t i = 0; i < FEATURE_LENGTH; i++) {
       zero.push_back(0.0);
     }
-
-    //tried to use accumulate, but no go
-    // std::vector<double> sum = accumulate(allTraffic.begin(), allTraffic.end(), zero, addSamples);
 
     std::vector<double> sum = zero;
     for (std::vector<std::vector<double> >::iterator i = allTraffic.begin(); i != allTraffic.end(); ++i)

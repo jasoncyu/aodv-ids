@@ -1,0 +1,15 @@
+recvreply sends to next hop with scoket->sendTo
+sendPacketFromQueeu sends the data packet (I think_)
+
+in recvrequest, right before calling sendreply, increment rrep_sent. 
+right before calling SendReplyByIntermediateNode, this is a forwarding.
+This is where the rrep is sent.
+
+Not su
+
+dst is the the destination where the data packet should go.
+
+rrepheader: sets a dst ==rreqHeader.GetDst()
+
+rrep_received nicrements when a node receives an rrep that has itself
+as the origin.
