@@ -13,13 +13,20 @@
 struct Cluster{
   const static uint32_t FEATURE_LENGTH = 8;
     //8 elements for the feature std::vector
-  std::vector<double> centroid;
-  std::map<int, std::vector<double> > samples;
+
+  typedef std::pair<int, std::vector<double> > Sample;
+  typedef std::vector<double> Traffic;
+  typedef std::vector<std::vector<double > > TrafficList;
+  typedef std::map<int, std::vector<double> > Samples;
+  typedef std::vector<Cluster> Clusters;
+
+  Traffic centroid;
+  Samples samples;
   bool anomalous;
 
   Cluster() : centroid(), samples() {};
 
-  void add(std::pair<int, std::vector<double> >& sample) {
+  void add(Sample& sample) {
       samples.insert (sample);
       updateCentroid();
   }
@@ -28,26 +35,26 @@ struct Cluster{
   void updateCentroid() {
 
     if (samples.size() == 1) {
-      std::map<int, std::vector<double> >::iterator samples_iterator = samples.begin();
+      Samples::iterator samples_iterator = samples.begin();
       centroid = samples_iterator->second;
       return;
     }
 
     //aggregates traffic from each sample into one std::vector
-    std::vector< std::vector<double> > allTraffic;
+    TrafficList allTraffic;
 
-    std::map<int, std::vector<double> >::iterator itr;
+    Samples::iterator itr;
     for (itr = samples.begin(); itr != samples.end(); itr++) {
       allTraffic.push_back(itr->second);
     }
 
     //std::vector of all zeros
-    std::vector<double> zero;
+    Traffic zero;
     for (uint32_t i = 0; i < FEATURE_LENGTH; i++) {
       zero.push_back(0.0);
     }
 
-    std::vector<double> sum = zero;
+    Traffic sum = zero;
     for (std::vector<std::vector<double> >::iterator i = allTraffic.begin(); i != allTraffic.end(); ++i)
     {
       // std::cout << "all traffic for loop\n";
@@ -63,13 +70,13 @@ struct Cluster{
     centroid = sum; 
   }
 
-  std::vector<double> addSamples(std::vector<double> x, std::vector<double> y) {
-    std::vector<double>::iterator itr1 = x.begin();
-    std::vector<double>::iterator itr2 = y.begin();
+  Traffic addSamples(std::vector<double> x, std::vector<double> y) {
+    Traffic::iterator itr1 = x.begin();
+    Traffic::iterator itr2 = y.begin();
 
     assert (x.size() == y.size());
 
-    std::vector<double> sum;
+    Traffic sum;
     while (itr1 != x.end() && itr2 != y.end()) {
       sum.push_back(*itr1 + *itr2);
       itr1++;
@@ -80,9 +87,9 @@ struct Cluster{
   }
   
   //returns outermost sample in the cluster
-  std::pair<int, std::vector<double> > outermost() {
-    std::map<int, std::vector<double> >::iterator samples_itr = samples.begin();
-    std::pair<int, std::vector<double> > farthest_sample = *samples_itr; 
+  Sample outermost() {
+    Samples::iterator samples_itr = samples.begin();
+    Sample farthest_sample = *samples_itr; 
     std::vector<double> farthest_traffic = samples_itr->second;
     double farthest_distance = Distance(farthest_traffic, *this);
 
@@ -103,7 +110,7 @@ struct Cluster{
   }
 
   //returns Euclidean distance between a traffic and this cluster
-  static double Distance(std::vector<double> traffic, Cluster c) {
+  static double Distance(Traffic traffic, Cluster c) {
    std::vector<double>::iterator itr1 = traffic.begin();
    std::vector<double>::iterator itr2 = c.centroid.begin(); 
 
@@ -120,21 +127,21 @@ struct Cluster{
    return distance;
   }
 
-  static std::map<int, std::vector<double> > Normalization(std::map<int, std::vector<double> > result, uint32_t size, std::ostringstream& os) {
+  static Samples Normalization(Samples sample, uint32_t size, std::ostringstream& os) {
     //normalization
 
     //calculate mean and std dev
-    std::vector<double> mean, stddev;
+    Traffic mean, stddev;
     //go through the "position"th element of all the std::vectors and get the mean and push it onto the mean std::vector
     //similarly for double, through all positions
     //put it on the end of the ithElement array
     double ithElements[size];
-    std::map<int, std::vector<double> >::iterator result_itr;
+    Samples::iterator sample_itr;
 
     for (uint32_t position = 0; position < Cluster::FEATURE_LENGTH; position++) {
       uint32_t i = 0;
-      for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
-        std::vector<double> traffic = result_itr->second;
+      for (sample_itr = sample.begin(); sample_itr != sample.end(); sample_itr++) {
+        Traffic traffic = sample_itr->second;
 
         ithElements[i++] = traffic[position];
       }
@@ -163,30 +170,30 @@ struct Cluster{
     os <<"\n";
 
     //go through all traffic std::vectors and create map with normalized traffic
-    std::map<int, std::vector<double> > norm_results;
+    Samples norm_samples;
 
-    for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
-      std::vector<double> norm_traffic(Cluster::FEATURE_LENGTH);
-      int num = result_itr->first;
-      std::vector<double> traffic = result_itr->second;
+    for (sample_itr = sample.begin(); sample_itr != sample.end(); sample_itr++) {
+      Traffic norm_traffic(Cluster::FEATURE_LENGTH);
+      int num = sample_itr->first;
+      Traffic traffic = sample_itr->second;
 
       for (uint32_t i = 0; i < traffic.size(); i++) {
         norm_traffic[i] = (traffic[i] - mean[i])/stddev[i];
       }
 
-      norm_results.insert(std::pair<int, std::vector<double> >(num, norm_traffic));
+      norm_samples.insert(Sample(num, norm_traffic));
     }
 
-    return norm_results;
+    return norm_samples;
   };
 
-  static std::vector<Cluster> FormClusters(std::map<int, std::vector<double> > norm_results, double w) {
-    std::vector<Cluster> clusters;
-    std::vector<Cluster>::iterator clusters_itr;
-    std::map<int, std::vector<double> >::iterator norm_results_itr;
+  static Clusters FormClusters(Samples norm_samples, double w) {
+    Clusters clusters;
+    Clusters::iterator clusters_itr;
+    Samples::iterator norm_samples_itr;
 
-    for (norm_results_itr = norm_results.begin(); norm_results_itr != norm_results.end(); norm_results_itr++) {
-      std::pair<int, std::vector<double> > sample = *norm_results_itr; 
+    for (norm_samples_itr = norm_samples.begin(); norm_samples_itr != norm_samples.end(); norm_samples_itr++) {
+      Sample sample = *norm_samples_itr; 
 
       if (clusters.empty()) {
         //if sample is first cluster, then we add it to the cluster set
@@ -194,9 +201,10 @@ struct Cluster{
         c.add(sample);
         clusters.push_back(c);
       } else {
-        std::vector<double> traffic = norm_results_itr->second;
+        Traffic traffic = norm_samples_itr->second;
         Cluster closest_cluster = clusters[0];
         double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+        std::cout << "initial closest cluster distance: " << closest_cluster_distance << std::endl;
 
         //find the nearest cluster to the sample
         for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
@@ -206,6 +214,8 @@ struct Cluster{
             closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
           }
         }
+
+        // std::cout << "cluster distance: " << closest_cluster_distance << std::endl;
         if (closest_cluster_distance < w) {
           //add sample to this cluster
           closest_cluster.add(sample);
@@ -221,13 +231,13 @@ struct Cluster{
     return clusters;
   }
 
-  static std::vector<Cluster> LabelClusters(std::vector<Cluster> clusters, double threshold, uint32_t size, std::ostringstream& os) {
-    std::vector<Cluster>::iterator clusters_itr;
+  static Clusters LabelClusters(std::vector<Cluster> clusters, double threshold, uint32_t size, std::ostringstream& os) {
+    Clusters::iterator clusters_itr;
 
     for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
       //c_max
-      std::pair<int, std::vector<double> > outermost_sample = clusters_itr->outermost();
-      std::vector<double> outermost_sample_traffic = outermost_sample.second;
+      Sample outermost_sample = clusters_itr->outermost();
+      Traffic outermost_sample_traffic = outermost_sample.second;
       //w_k
       //TODO: Figure out what this is used for
       // double outermost_sample_width = Cluster::Distance(outermost_sample_traffic, *clusters_itr);

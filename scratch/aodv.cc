@@ -159,7 +159,7 @@ AodvExample::AodvExample () :
   malicious(false),
   trace(true),
   threshold(0.10),
-  w(10.0)
+  w(1000.0)
 {
 }
 
