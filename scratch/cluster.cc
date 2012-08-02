@@ -9,29 +9,20 @@
 #include <stdint.h>
 #include <cassert>
 
-struct Cluster{
-  const static uint32_t FEATURE_LENGTH = 2;
-    //8 elements for the feature std::vector
-
-  typedef std::pair<int, std::vector<double> > Sample;
-  typedef std::vector<double> Traffic;
-  typedef std::vector<std::vector<double > > TrafficList;
-  typedef std::map<int, std::vector<double> > Samples;
-  typedef std::vector<Cluster> Clusters;
-
-  Traffic centroid;
-  Samples samples;
-  bool anomalous;
-
-  Cluster() : centroid(), samples() {};
-
-  void add(Sample& sample) {
+#include "cluster.h"
+#define LZZ_INLINE inline
+using namespace Cluster;
+uint32_t const Cluster::FEATURE_LENGTH = 2;
+Cluster::Cluster ()
+  : centroid (), samples ()
+                                    {}
+void Cluster::add (Sample & sample)
+                           {
       samples.insert (sample);
       updateCentroid();
   }
-
-  
-  void updateCentroid() {
+void Cluster::updateCentroid ()
+                        {
 
     if (samples.size() == 1) {
       Samples::iterator samples_iterator = samples.begin();
@@ -68,8 +59,8 @@ struct Cluster{
 
     centroid = sum; 
   }
-
-  Traffic addTraffic(Traffic x, Traffic y) {
+Cluster::Traffic Cluster::addTraffic (Traffic x, Traffic y)
+                                           {
     Traffic::iterator itr1 = x.begin();
     Traffic::iterator itr2 = y.begin();
 
@@ -84,9 +75,8 @@ struct Cluster{
 
     return sum;
   }
-  
-  //returns outermost sample in the cluster
-  Sample outermost() {
+Cluster::Sample Cluster::outermost ()
+                     {
     Samples::iterator samples_itr = samples.begin();
     Sample farthest_sample = *samples_itr; 
     Traffic farthest_traffic = samples_itr->second;
@@ -102,14 +92,13 @@ struct Cluster{
     }
 
     return farthest_sample;
-  } 
-
-  uint32_t size() {
+  }
+uint32_t Cluster::size ()
+                  {
     return samples.size();
   }
-
-  //returns Euclidean distance between a traffic and this cluster
-  static double Distance(Traffic traffic, Cluster c) {
+double Cluster::Distance (Traffic traffic, Cluster c)
+                                                     {
    std::vector<double>::iterator itr1 = traffic.begin();
    std::vector<double>::iterator itr2 = c.centroid.begin(); 
 
@@ -125,8 +114,8 @@ struct Cluster{
    distance = sqrt(distance);
    return distance;
   }
-
-  static Samples Normalization(Samples sample, uint32_t size, std::ostringstream& os) {
+Cluster::Samples Cluster::Normalization (Samples sample, uint32_t size, std::ostringstream & os)
+                                                                                      {
     //normalization
 
     //calculate mean and std dev
@@ -184,9 +173,9 @@ struct Cluster{
     }
 
     return norm_samples;
-  };
-
-  static Clusters FormClusters(Samples norm_samples, double w) {
+  }
+Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
+                                                               {
     Clusters clusters;
     Clusters::iterator clusters_itr;
     Samples::iterator norm_samples_itr;
@@ -229,8 +218,8 @@ struct Cluster{
 
     return clusters;
   }
-
-  static Clusters LabelClusters(Clusters clusters, double threshold, uint32_t size, std::ostringstream& os) {
+Cluster::Clusters Cluster::LabelClusters (Clusters clusters, double threshold, uint32_t size, std::ostringstream & os)
+                                                                                                            {
     Clusters::iterator clusters_itr;
 
     for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
@@ -257,12 +246,8 @@ struct Cluster{
 
     return clusters;
   }
-
-};
-
-using namespace Cluster;
-
-std::ostream &operator<< (std::ostream& out, const Cluster c) {
+std::ostream & operator << (std::ostream & out, Cluster const c)
+                                                              {
   std::ostringstream oss;
   oss << "Number of samples: " << c.samples.size() << std::endl;
 
@@ -276,8 +261,8 @@ std::ostream &operator<< (std::ostream& out, const Cluster c) {
   out << oss.str();
   return out;
 }
-
-std::ostream &operator<< (std::ostream& out, const Clusters cs) {
+std::ostream & operator << (std::ostream & out, Clusters const cs)
+                                                                {
   std::ostringstream oss;
   for (int i = 0; i < cs.size(); ++i)
   {
@@ -287,9 +272,8 @@ std::ostream &operator<< (std::ostream& out, const Clusters cs) {
   out << oss.str();
   return out;
 }
-
-
-std::ostream &operator<< (std::ostream& out, const Traffic t) {
+std::ostream & operator << (std::ostream & out, Traffic const t)
+                                                              {
   std::ostringstream oss
   oss << "< ";
 
@@ -306,3 +290,4 @@ std::ostream &operator<< (std::ostream& out, const Traffic t) {
   out << oss.str();
   return out;
 }
+#undef LZZ_INLINE
