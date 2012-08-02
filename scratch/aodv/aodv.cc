@@ -147,7 +147,7 @@ int main (int argc, char **argv)
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (25),
+  size (5),
   //100 is too large, all packets dropped
   step (50),
   totalTime (10),
@@ -335,7 +335,7 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   vector<Cluster> clusters = Cluster::FormClusters(norm_result, w);
   
   std::cout << "clusters: " << std::endl;
-  std::cout << clusters << std::endl;
+  // std::cout << clusters << std::endl;
 
   vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
 

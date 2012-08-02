@@ -181,9 +181,11 @@ Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
         clusters.push_back(c);
       } else {
         Traffic traffic = norm_samples_itr->second;
+        assert (clusters.size() != 0);
         Cluster closest_cluster = clusters[0];
+        std::cout << "closest_cluster: " << closest_cluster;
         double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
-        std::cout << "initial closest cluster distance: " << closest_cluster_distance << std::endl;
+        // std::cout << "initial closest cluster distance: " << closest_cluster_distance << std::endl;
 
         //find the nearest cluster to the sample
         for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
@@ -245,6 +247,7 @@ std::ostream & operator << (std::ostream & out, Cluster const  c)
   Samples::const_iterator sitr = c.samples.begin();
   while (sitr != c.samples.end()) {
     oss << "Node " << sitr->first << ": " << sitr->second;
+    sitr++;
   }
 
   oss << std::endl;
