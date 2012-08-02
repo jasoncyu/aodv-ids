@@ -1,3 +1,5 @@
+
+Careful if you change the feature length to something except 8. Memory leaks.
 recvreply sends to next hop with scoket->sendTo
 sendPacketFromQueeu sends the data packet (I think_)
 

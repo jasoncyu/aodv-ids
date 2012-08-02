@@ -11,7 +11,7 @@
 
 
 struct Cluster{
-  const static uint32_t FEATURE_LENGTH = 2;
+  const static uint32_t FEATURE_LENGTH = 8;
     //8 elements for the feature std::vector
   std::vector<double> centroid;
   std::map<int, std::vector<double> > samples;
