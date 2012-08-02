@@ -333,6 +333,7 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   vector<Cluster> clusters = Cluster::FormClusters(norm_result, w);
   vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
 
+  //report on anomalous clusters
   os << "number of clusters: " << labelled_clusters.size() << std::endl;
 
   vector<Cluster>::iterator clusters_itr;
