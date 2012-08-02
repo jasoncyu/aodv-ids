@@ -9,9 +9,8 @@
 #include <stdint.h>
 #include <cassert>
 
-
 struct Cluster{
-  const static uint32_t FEATURE_LENGTH = 8;
+  const static uint32_t FEATURE_LENGTH = 2;
     //8 elements for the feature std::vector
 
   typedef std::pair<int, std::vector<double> > Sample;
@@ -55,10 +54,10 @@ struct Cluster{
     }
 
     Traffic sum = zero;
-    for (std::vector<std::vector<double> >::iterator i = allTraffic.begin(); i != allTraffic.end(); ++i)
+    for (TrafficList::iterator i = allTraffic.begin(); i != allTraffic.end(); ++i)
     {
       // std::cout << "all traffic for loop\n";
-      sum = addSamples(sum, *i); 
+      sum = addTraffic(sum, *i); 
     }
 
     //divide by number of elements
@@ -70,7 +69,7 @@ struct Cluster{
     centroid = sum; 
   }
 
-  Traffic addSamples(std::vector<double> x, std::vector<double> y) {
+  Traffic addTraffic(Traffic x, Traffic y) {
     Traffic::iterator itr1 = x.begin();
     Traffic::iterator itr2 = y.begin();
 
@@ -90,11 +89,11 @@ struct Cluster{
   Sample outermost() {
     Samples::iterator samples_itr = samples.begin();
     Sample farthest_sample = *samples_itr; 
-    std::vector<double> farthest_traffic = samples_itr->second;
+    Traffic farthest_traffic = samples_itr->second;
     double farthest_distance = Distance(farthest_traffic, *this);
 
     for (samples_itr = samples.begin(); samples_itr != samples.end(); samples_itr++) {
-      std::vector<double> traffic = samples_itr->second;
+      Traffic traffic = samples_itr->second;
       double distance = Distance(traffic, *this);
       if (distance > farthest_distance) {
         farthest_sample = *samples_itr;
@@ -231,7 +230,7 @@ struct Cluster{
     return clusters;
   }
 
-  static Clusters LabelClusters(std::vector<Cluster> clusters, double threshold, uint32_t size, std::ostringstream& os) {
+  static Clusters LabelClusters(Clusters clusters, double threshold, uint32_t size, std::ostringstream& os) {
     Clusters::iterator clusters_itr;
 
     for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
@@ -260,3 +259,50 @@ struct Cluster{
   }
 
 };
+
+using namespace Cluster;
+
+std::ostream &operator<< (std::ostream& out, const Cluster c) {
+  std::ostringstream oss;
+  oss << "Number of samples: " << c.samples.size() << std::endl;
+
+  Samples::iterator sitr = c.samples.begin();
+  while (sitr != c.samples.end()) {
+    oss << "Node " << sitr->first << ": " << sitr->second;
+  }
+
+  oss << std::endl;
+
+  out << oss.str();
+  return out;
+}
+
+std::ostream &operator<< (std::ostream& out, const Clusters cs) {
+  std::ostringstream oss;
+  for (int i = 0; i < cs.size(); ++i)
+  {
+    oss << "Cluster " << i << " size: " << cs[0].size() << std::endl;
+  }
+
+  out << oss.str();
+  return out;
+}
+
+
+std::ostream &operator<< (std::ostream& out, const Traffic t) {
+  std::ostringstream oss
+  oss << "< ";
+
+  Traffic:iterator titr = t.begin();
+  while (titr != t.end()) {
+    oss << *titr;
+    titr++;
+    if (titr != t.end())
+      oss << " ";
+  }
+
+  oss << ">" << std::endl;
+
+  out << oss.str();
+  return out;
+}

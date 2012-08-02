@@ -18,6 +18,8 @@
  * Authors: Pavel Boyko <boyko@iitp.ru>
  */
 
+ //TODO: refactor to use the typedefs in cluster
+
 #include "ns3/aodv-module.h"
 #include "ns3/core-module.h"
 #include "ns3/mobility-module.h"
@@ -199,8 +201,8 @@ AodvExample::Run ()
   Simulator::Run ();
   Simulator::Destroy ();
 
-  std::map<int, vector<double> > result = Stats();
-  Process (result);
+  std::map<int, vector<double> > samples = Stats();
+  Process (samples);
 }
 
 void 

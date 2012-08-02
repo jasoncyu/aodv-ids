@@ -61,7 +61,7 @@ int main() {
   vector<Cluster> clusters = Cluster::FormClusters(result, w);
   // vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
   cout << "Adding z should result in two clusters\n"
-       << "Expected: 2" << "clusters"
+       << "Expected: 2" << "clusters\n"
        << "Actual: " << clusters.size() << " clusters";
 
   cout << endl; 
