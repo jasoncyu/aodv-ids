@@ -1,13 +1,3 @@
-#include <cmath>
-#include <vector>
-#include <map>
-#include <utility>
-#include <gsl/gsl_statistics.h>
-#include <gsl/gsl_cdf.h>
-#include <iostream>
-#include <sstream>
-#include <stdint.h>
-#include <cassert>
 
 #include "cluster.h"
 // using namespace Cluster;

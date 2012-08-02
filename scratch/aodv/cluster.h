@@ -1,6 +1,17 @@
 #ifndef LZZ_cluster_h
 #define LZZ_cluster_h
 
+#include <cmath>
+#include <vector>
+#include <map>
+#include <utility>
+#include <gsl/gsl_statistics.h>
+#include <gsl/gsl_cdf.h>
+#include <iostream>
+#include <sstream>
+#include <stdint.h>
+#include <cassert>
+
 struct Cluster
 {
   static uint32_t const FEATURE_LENGTH = 2;
