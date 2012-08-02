@@ -1,6 +1,10 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <gsl/gsl_statistics.h>
+#include <gsl/gsl_cdf.h>
+#include <iostream>
+
 
 struct Cluster{
   const static uint32_t FEATURE_LENGTH = 8;
@@ -111,5 +115,134 @@ struct Cluster{
    distance = sqrt(distance);
    return distance;
   }
-  
+
+  static map<int, vector<double> > Normalization(map<int, vector<double> > result, uint32_t size, std::ostringstream& os) {
+    //normalization
+
+    //calculate mean and std dev
+    vector<double> mean, stddev;
+    //go through the "position"th element of all the vectors and get the mean and push it onto the mean vector
+    //similarly for double, through all positions
+    //put it on the end of the ithElement array
+    double ithElements[size];
+    std::map<int, vector<double> >::iterator result_itr;
+
+    for (uint32_t position = 0; position < Cluster::FEATURE_LENGTH; position++) {
+      uint32_t i = 0;
+      for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
+        vector<double> traffic = result_itr->second;
+
+        ithElements[i++] = traffic[position];
+      }
+      assert (i == size);
+
+      double single_mean = gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH);
+      mean.push_back(single_mean);
+      double single_sd = gsl_stats_sd(ithElements, 1, Cluster::FEATURE_LENGTH);
+      stddev.push_back(single_sd);
+    }
+
+    //log means and sd's
+    os << "Means: ";
+
+    for (uint32_t i = 0; i < mean.size(); ++i)
+    {
+      os << mean[i] << "\t ";
+    }
+
+    os << "\nStd Devs: ";
+
+    for (uint32_t i = 0; i < stddev.size(); ++i)
+    {
+      os << stddev[i] << "\t ";
+    }
+    os <<"\n";
+
+    //go through all traffic vectors and create map with normalized traffic
+    map<int, vector<double> > norm_results;
+
+    for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
+      vector<double> norm_traffic(Cluster::FEATURE_LENGTH);
+      int num = result_itr->first;
+      vector<double> traffic = result_itr->second;
+
+      for (uint32_t i = 0; i < traffic.size(); i++) {
+        norm_traffic[i] = (traffic[i] - mean[i])/stddev[i];
+      }
+
+      norm_results.insert(pair<int, vector<double> >(num, norm_traffic));
+    }
+
+    return norm_results;
+  };
+
+  static vector<Cluster> FormClusters(map<int, vector<double> > norm_results, double w) {
+    vector<Cluster> clusters;
+    vector<Cluster>::iterator clusters_itr;
+    map<int, vector<double> >::iterator norm_results_itr;
+
+    for (norm_results_itr = norm_results.begin(); norm_results_itr != norm_results.end(); norm_results_itr++) {
+      pair<int, vector<double> > sample = *norm_results_itr; 
+
+      if (clusters.empty()) {
+        //if sample is first cluster, then we add it to the cluster set
+        Cluster c = Cluster();
+        c.add(sample);
+        clusters.push_back(c);
+      } else {
+        vector<double> traffic = norm_results_itr->second;
+        Cluster closest_cluster = clusters[0];
+        double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+
+        //find the nearest cluster to the sample
+        for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+          double new_distance = Cluster::Distance(traffic, *clusters_itr);
+          if (new_distance < closest_cluster_distance) {
+            closest_cluster = *clusters_itr;
+            closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+          }
+        }
+        if (closest_cluster_distance < w) {
+          //add sample to this cluster
+          closest_cluster.add(sample);
+        } else {
+          //make a new cluster with the new sample
+          Cluster c = Cluster();
+          c.add(sample);
+          clusters.push_back(c);
+        }
+      }
+    }
+
+    return clusters;
+  }
+
+  static vector<Cluster> LabelClusters(vector<Cluster> clusters, double threshold, uint32_t size, std::ostringstream& os) {
+    vector<Cluster>::iterator clusters_itr;
+
+    for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+      //c_max
+      pair<int, vector<double> > outermost_sample = clusters_itr->outermost();
+      vector<double> outermost_sample_traffic = outermost_sample.second;
+      //w_k
+      //TODO: Figure out what this is used for
+      // double outermost_sample_width = Cluster::Distance(outermost_sample_traffic, *clusters_itr);
+
+      //If the number of samples in a cluster over the total number of samples is less than the
+      //threshold, we label as anomalous
+
+      uint32_t cluster_size = clusters_itr->size();
+      double criteria = cluster_size/size;
+
+      if (criteria < threshold) {
+        clusters_itr->anomalous = true;
+      } else {
+        clusters_itr->anomalous = false;
+      }
+    }
+
+
+    return clusters;
+  }
+
 };

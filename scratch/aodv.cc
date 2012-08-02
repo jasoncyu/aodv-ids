@@ -33,8 +33,6 @@
 #include <functional>
 #include <numeric>
 #include <cassert>
-#include <gsl/gsl_statistics.h>
-#include <gsl/gsl_cdf.h>
 //I made these
 #include "cluster.h"
 using namespace ns3;
@@ -327,126 +325,18 @@ void
 AodvExample::Process(std::map<int, vector<double> > result) {
   LogTraffic(result);
 
-  vector<double> mean, stddev;
-  //go through the "position"th element of all the vectors and get the mean and push it onto the mean vector
-  //similarly for double, through all positions
-  //put it on the end of the ithElement array
-  double ithElements[size];
-  std::map<int, vector<double> >::iterator result_itr;
+  std::ostringstream os;
 
-  for (uint32_t position = 0; position < Cluster::FEATURE_LENGTH; position++) {
-    uint32_t i = 0;
-    for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
-      vector<double> traffic = result_itr->second;
-
-      ithElements[i++] = traffic[position];
-    }
-    assert (i == size);
-
-    double single_mean = gsl_stats_mean(ithElements, 1, Cluster::FEATURE_LENGTH);
-    mean.push_back(single_mean);
-    double single_sd = gsl_stats_sd(ithElements, 1, Cluster::FEATURE_LENGTH);
-    stddev.push_back(single_sd);
-  }
-
-  //log means and sd's
-  ostringstream os;
-  os << "Means: ";
-
-  for (uint32_t i = 0; i < mean.size(); ++i)
-  {
-    os << mean[i] << "\t ";
-  }
-
-  os << "\nStd Devs: ";
-
-  for (uint32_t i = 0; i < stddev.size(); ++i)
-  {
-    os << stddev[i] << "\t ";
-  }
-  os <<"\n";
-  //normalization
-  //go through all traffic vectors and create map with normalized traffic
-  map<int, vector<double> > norm_results;
-
-  for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
-    vector<double> norm_traffic(Cluster::FEATURE_LENGTH);
-    int num = result_itr->first;
-    vector<double> traffic = result_itr->second;
-
-    for (uint32_t i = 0; i < traffic.size(); i++) {
-      norm_traffic[i] = (traffic[i] - mean[i])/stddev[i];
-    }
-
-    norm_results.insert(pair<int, vector<double> >(num, norm_traffic));
-  }
-
-  //normalized traffic report output
-
-  LogTraffic(norm_results);
+  map<int, vector<double> > norm_result = Cluster::Normalization(result, size, os);
+  LogTraffic(norm_result);
   
-  vector<Cluster> clusters;
+  vector<Cluster> clusters = Cluster::FormClusters(norm_result, w);
+  vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
+
+  os << "number of clusters: " << labelled_clusters.size() << std::endl;
+
   vector<Cluster>::iterator clusters_itr;
-  map<int, vector<double> >::iterator norm_results_itr;
-
-  for (norm_results_itr = norm_results.begin(); norm_results_itr != norm_results.end(); norm_results_itr++) {
-    pair<int, vector<double> > sample = *norm_results_itr; 
-
-    if (clusters.empty()) {
-      //if sample is first cluster, then we add it to the cluster set
-      Cluster c = Cluster();
-      c.add(sample);
-      clusters.push_back(c);
-    } else {
-      vector<double> traffic = norm_results_itr->second;
-      Cluster closest_cluster = clusters[0];
-      double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
-
-      for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
-        double new_distance = Cluster::Distance(traffic, *clusters_itr);
-        if (new_distance < closest_cluster_distance) {
-          closest_cluster = *clusters_itr;
-          closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
-        }
-      }
-
-      if (closest_cluster_distance < w) {
-        //add sample to this cluster
-        closest_cluster.add(sample);
-      } else {
-        //make a new cluster with the new sample
-        Cluster c = Cluster();
-        c.add(sample);
-        clusters.push_back(c);
-      }
-    }
-  }
-
-  //cluster labelling
-  for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
-    //c_max
-    pair<int, vector<double> > outermost_sample = clusters_itr->outermost();
-    vector<double> outermost_sample_traffic = outermost_sample.second;
-    //w_k
-    //TODO: Figure out what this is used for
-    // double outermost_sample_width = Cluster::Distance(outermost_sample_traffic, *clusters_itr);
-
-    //If the number of samples in a cluster over the total number of samples is less than the
-    //threshold, we label as anomalous
-
-    uint32_t cluster_size = clusters_itr->size();
-    double criteria = cluster_size/size;
-
-    if (criteria < threshold) {
-      clusters_itr->anomalous = true;
-    } else {
-      clusters_itr->anomalous = false;
-    }
-  }
-
-  os << "number of clusters: " << clusters.size() << std::endl;
-
-  for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+  for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
     if (clusters_itr->anomalous) {
       std::map<int, vector<double> >::iterator samples_itr;
       std::map<int, vector<double> > samples = clusters_itr->samples;
@@ -457,6 +347,7 @@ AodvExample::Process(std::map<int, vector<double> > result) {
     }
     os << "not anomalous\n";
   }
+
   Log(os);
 }
 
