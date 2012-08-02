@@ -10,10 +10,8 @@
 #include <cassert>
 
 #include "cluster.h"
-#define LZZ_INLINE inline
 // using namespace Cluster;
 
-uint32_t const Cluster::FEATURE_LENGTH = 2;
 
 Cluster::Cluster ()
   : centroid (), samples () {}
@@ -297,4 +295,3 @@ std::ostream & operator << (std::ostream & out, Traffic const t)
   out << oss.str();
   return out;
 }
-#undef LZZ_INLINE

@@ -1,13 +1,9 @@
-
-// cluster.h
-//
-
 #ifndef LZZ_cluster_h
 #define LZZ_cluster_h
-#define LZZ_INLINE inline
+
 struct Cluster
 {
-  static uint32_t const FEATURE_LENGTH;
+  static uint32_t const FEATURE_LENGTH = 2;
   typedef std::pair <int, std::vector<double> > Sample;
   typedef std::vector <double> Traffic;
   typedef std::vector <std::vector<double > > TrafficList;
@@ -35,11 +31,9 @@ typedef std::vector <std::vector<double > > TrafficList;
 typedef std::map <int, std::vector<double> > Samples;
 typedef std::vector <Cluster> Clusters;
 
-
 std::ostream & operator << (std::ostream & out, Cluster const c);
 //Clusters
 std::ostream & operator << (std::ostream & out, std::vector <Cluster> cs);
 //Traffic
 std::ostream & operator << (std::ostream & out, std::vector <double> const t);
-#undef LZZ_INLINE
 #endif
