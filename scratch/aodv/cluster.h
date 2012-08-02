@@ -14,7 +14,7 @@
 
 struct Cluster
 {
-  static uint32_t const FEATURE_LENGTH = 8;
+  static uint32_t const FEATURE_LENGTH = 7;
   typedef std::pair <int, std::vector<double> > Sample;
   typedef std::vector <double> Traffic;
   typedef std::vector <std::vector<double > > TrafficList;

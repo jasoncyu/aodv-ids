@@ -147,7 +147,7 @@ int main (int argc, char **argv)
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (5),
+  size (25),
   //100 is too large, all packets dropped
   step (50),
   totalTime (10),
@@ -221,13 +221,15 @@ AodvExample::Log(std::ostringstream& os)
 std::map<int, vector<double> >
 AodvExample::Stats()
 { 
-  double meanRreqSent = 0, meanRreqReceived = 0, meanRreqDropped = 0;
+  double meanRreqSent = 0, meanRreqReceived = 0;
+  // double meanRreqDropped = 0;
   double meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
   double meanRerrSent = 0, meanRerrReceived = 0;
   std::map<int, vector<double> > result;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
-    double rreqSent = 0, rreqReceived = 0, rreqDropped = 0;
+    double rreqSent = 0, rreqReceived = 0, 
+    // double rreqDropped = 0;
     double rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
     double rerrSent = 0, rerrReceived = 0;
     vector<double> traffic;
@@ -238,7 +240,7 @@ AodvExample::Stats()
 
     rreqSent      = routing->GetRreqSent();
     rreqReceived  = routing->GetRreqReceived();
-    rreqDropped   = routing->GetRreqDropped();
+    // rreqDropped   = routing->GetRreqDropped();
     rrepSent      = routing->GetRrepSent();
     rrepForwarded = routing->GetRrepForwarded();
     rrepReceived  = routing->GetRrepReceived();
@@ -247,7 +249,7 @@ AodvExample::Stats()
 
     traffic.push_back(rreqSent     );
     traffic.push_back(rreqReceived );
-    traffic.push_back(rreqDropped  );
+    // traffic.push_back(rreqDropped  );
     traffic.push_back(rrepSent     );
     traffic.push_back(rrepForwarded);
     traffic.push_back(rrepReceived );
@@ -259,7 +261,7 @@ AodvExample::Stats()
 
     meanRreqSent      += rreqSent;
     meanRreqReceived  += rreqReceived;
-    meanRreqDropped   += rreqDropped;
+    // meanRreqDropped   += rreqDropped;
     meanRrepSent      += rreqSent;
     meanRrepForwarded += rrepForwarded;
     meanRrepReceived  += rrepReceived;
@@ -268,7 +270,7 @@ AodvExample::Stats()
   }
   meanRreqSent /= size;
   meanRreqReceived /= size;
-  meanRreqDropped /= size;
+  // meanRreqDropped /= size;
   meanRrepSent /= size;
   meanRrepForwarded /= size;
   meanRrepReceived /= size;
@@ -280,7 +282,7 @@ AodvExample::Stats()
 
   os << "Mean RREQ sent: " << meanRreqSent << std::endl
      << "Mean RREQ received: " << meanRreqReceived << std::endl
-     << "Mean RREQ dropped: " << meanRreqDropped << std::endl
+     // << "Mean RREQ dropped: " << meanRreqDropped << std::endl
      << "Mean RREP sent: " << meanRrepSent << std::endl
      << "Mean RREP forwarded: " << meanRrepForwarded << std::endl
      << "Mean RREP received: " << meanRrepReceived << std::endl
