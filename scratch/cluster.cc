@@ -11,16 +11,19 @@
 
 #include "cluster.h"
 #define LZZ_INLINE inline
-using namespace Cluster;
+// using namespace Cluster;
+
 uint32_t const Cluster::FEATURE_LENGTH = 2;
+
 Cluster::Cluster ()
-  : centroid (), samples ()
-                                    {}
+  : centroid (), samples () {}
+
 void Cluster::add (Sample & sample)
                            {
       samples.insert (sample);
       updateCentroid();
   }
+
 void Cluster::updateCentroid ()
                         {
 
@@ -246,12 +249,12 @@ Cluster::Clusters Cluster::LabelClusters (Clusters clusters, double threshold, u
 
     return clusters;
   }
-std::ostream & operator << (std::ostream & out, Cluster const c)
+std::ostream & operator << (std::ostream & out, Cluster const  c)
                                                               {
   std::ostringstream oss;
   oss << "Number of samples: " << c.samples.size() << std::endl;
 
-  Samples::iterator sitr = c.samples.begin();
+  Samples::const_iterator sitr = c.samples.begin();
   while (sitr != c.samples.end()) {
     oss << "Node " << sitr->first << ": " << sitr->second;
   }
@@ -261,23 +264,27 @@ std::ostream & operator << (std::ostream & out, Cluster const c)
   out << oss.str();
   return out;
 }
-std::ostream & operator << (std::ostream & out, Clusters const cs)
+std::ostream & operator << (std::ostream & out, Clusters cs)
                                                                 {
   std::ostringstream oss;
-  for (int i = 0; i < cs.size(); ++i)
+  Clusters::iterator csitr = cs.begin();
+
+  int i = 0;
+  while (csitr != cs.end())
   {
-    oss << "Cluster " << i << " size: " << cs[0].size() << std::endl;
+    oss << "Cluster " << i << " size: " << csitr->size() << std::endl;
+    i++;
   }
 
   out << oss.str();
   return out;
 }
 std::ostream & operator << (std::ostream & out, Traffic const t)
-                                                              {
-  std::ostringstream oss
+{
+  std::ostringstream oss;
   oss << "< ";
 
-  Traffic:iterator titr = t.begin();
+  Traffic::const_iterator titr = t.begin();
   while (titr != t.end()) {
     oss << *titr;
     titr++;

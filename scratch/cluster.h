@@ -1,3 +1,4 @@
+
 // cluster.h
 //
 
@@ -26,8 +27,19 @@ struct Cluster
   static Clusters FormClusters (Samples norm_samples, double w);
   static Clusters LabelClusters (Clusters clusters, double threshold, uint32_t size, std::ostringstream & os);
 };
+
+
+typedef std::pair <int, std::vector<double> > Sample;
+typedef std::vector <double> Traffic;
+typedef std::vector <std::vector<double > > TrafficList;
+typedef std::map <int, std::vector<double> > Samples;
+typedef std::vector <Cluster> Clusters;
+
+
 std::ostream & operator << (std::ostream & out, Cluster const c);
-std::ostream & operator << (std::ostream & out, Clusters const cs);
-std::ostream & operator << (std::ostream & out, Traffic const t);
+//Clusters
+std::ostream & operator << (std::ostream & out, std::vector <Cluster> cs);
+//Traffic
+std::ostream & operator << (std::ostream & out, std::vector <double> const t);
 #undef LZZ_INLINE
 #endif
