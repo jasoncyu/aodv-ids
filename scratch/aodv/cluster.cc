@@ -183,7 +183,7 @@ Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
         Traffic traffic = norm_samples_itr->second;
         assert (clusters.size() != 0);
         Cluster closest_cluster = clusters[0];
-        std::cout << "closest_cluster: " << closest_cluster;
+        // std::cout << "closest_cluster: " << closest_cluster;
         double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
         // std::cout << "initial closest cluster distance: " << closest_cluster_distance << std::endl;
 
@@ -199,9 +199,12 @@ Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
         // std::cout << "cluster distance: " << closest_cluster_distance << std::endl;
         if (closest_cluster_distance < w) {
           //add sample to this cluster
+          // std::cout << "sample to be added: " << sample << std::endl;
+          // std::cout << "sample added to cluster" << std::endl;
           closest_cluster.add(sample);
         } else {
           //make a new cluster with the new sample
+          // std::cout << "New cluster created" << std::endl;
           Cluster c = Cluster();
           c.add(sample);
           clusters.push_back(c);
@@ -263,8 +266,10 @@ std::ostream & operator << (std::ostream & out, Clusters cs)
   int i = 0;
   while (csitr != cs.end())
   {
-    oss << "Cluster " << i << " size: " << csitr->size() << std::endl;
+    oss << "Cluster " << i << ": " << std::endl;
+    oss << *csitr << std::endl;
     i++;
+    csitr++;
   }
 
   out << oss.str();
@@ -288,3 +293,17 @@ std::ostream & operator << (std::ostream & out, Traffic const t)
   out << oss.str();
   return out;
 }
+
+std::ostream & operator << (std::ostream & out, Sample const s)
+{
+  std::ostringstream oss;
+
+  int num = s.first;
+  Traffic t = s.second;
+  
+  oss << "Node " << num << ": " << t << std::endl;
+
+  out << oss.str();
+  return out;
+}
+

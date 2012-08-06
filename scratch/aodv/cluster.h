@@ -47,4 +47,5 @@ std::ostream & operator << (std::ostream & out, Cluster const c);
 std::ostream & operator << (std::ostream & out, std::vector <Cluster> cs);
 //Traffic
 std::ostream & operator << (std::ostream & out, std::vector <double> const t);
+std::ostream & operator << (std::ostream & out, Sample const s);
 #endif

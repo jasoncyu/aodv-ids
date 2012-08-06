@@ -35,6 +35,7 @@
 #include <functional>
 #include <numeric>
 #include <cassert>
+#include <iomanip>
 //I made these
 #include "cluster.h"
 using namespace ns3;
@@ -63,8 +64,7 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 /**
  * \brief Test script.
  * 
- * This script creates 1-dimensional grid topology and then ping last node from the first one:
- * 
+ * This script creates 1-dimensional grid topology and then ping last node from the first one: *
  * [10.0.0.1] <-- step --> [10.0.0.2] <-- step --> [10.0.0.3] <-- step --> [10.0.04]
  * 
  * ping 10.0.0.4
@@ -79,8 +79,9 @@ public:
   void Run ();
   /// Report results
   std::map<int, vector<double> > Stats ();
+  void w_cluster_table(vector<double> x, vector<int> y, vector<int> z);
   void Process(std::map<int, vector<double> > result);
-  void Log(std::ostringstream& os);
+  void Log(std::ostringstream& os, std::string name = "aodv.report");
   void LogTraffic(std::map<int, vector<double> > result);
 
 private:
@@ -107,7 +108,6 @@ private:
   //simulation parameters
   double threshold;
   //threshold
-  double w;
   //\}
 
   ///\name network
@@ -160,8 +160,7 @@ AodvExample::AodvExample () :
   verbose(false),
   malicious(false),
   trace(true),
-  threshold(0.10),
-  w(1000.0)
+  threshold(0.10)
 {
 }
 
@@ -206,14 +205,14 @@ AodvExample::Run ()
 }
 
 void 
-AodvExample::Log(std::ostringstream& os) 
+AodvExample::Log(std::ostringstream& oss, std::string name)
 {
   std::ofstream report;
-  report.open("aodv.report", ios::app);
+  report.open(name.c_str(), ios::app);
   if (!report.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
-  report << os.str() << std::endl; 
+  report << oss.str() << std::endl; 
   report.close();
 }
 
@@ -228,7 +227,7 @@ AodvExample::Stats()
   std::map<int, vector<double> > result;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
-    double rreqSent = 0, rreqReceived = 0, 
+    double rreqSent = 0, rreqReceived = 0; 
     // double rreqDropped = 0;
     double rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
     double rerrSent = 0, rerrReceived = 0;
@@ -306,7 +305,6 @@ AodvExample::LogTraffic(std::map<int, vector<double> > result)
     int num = result_itr->first;
     vector<double> traffic = result_itr->second;
 
-
     std::vector<double>::iterator traffic_itr;
     os << "Node " << num << ": "; 
 
@@ -324,6 +322,65 @@ AodvExample::LogTraffic(std::map<int, vector<double> > result)
   Log(os);
 }
 
+
+//plots w|clusters_total|clusters_anon
+//plots the vectors it's given in a table
+void 
+AodvExample::w_cluster_table(vector<double> x, vector<int> y, vector<int> z)
+{
+  ostringstream oss;
+
+  //comment character for gnuplot
+  oss << "#";
+  vector<string> headers; 
+  std::string header1, header2, header3;
+  header1 = "w";
+  header2 = "# of clusters";
+  header3 = "# of anon clusters" ;
+
+  headers.push_back(header1);  
+  headers.push_back(header2);  
+  headers.push_back(header3);  
+
+  //create table headers
+
+  vector<string>::iterator itr = headers.begin();
+  while (itr != headers.end()) {
+    oss << setw(5) << *itr;
+    itr++;
+    if (itr != headers.end())
+      oss << " | ";
+  }
+
+  oss << "\n";
+
+  // int columns = headers.size();
+  vector<double>::iterator x_itr = x.begin();
+  vector<int>::iterator y_itr = y.begin();
+  vector<int>::iterator z_itr = z.begin();
+
+  while (x_itr != x.end()) {
+    oss << setw(header1.size()) << *x_itr;
+    oss << setw(header2.size()) << *y_itr;
+    oss << setw(header3.size()) << *z_itr << std::endl;
+
+    x_itr++;
+    y_itr++;
+    z_itr++;
+  }
+
+  ofstream report;
+
+  report.open("aodv.clusters", ios::app);
+  if (!report.is_open ()) {
+    std::cout << "ERROR: could not open file" << std::endl;
+  }
+
+  report << oss.str() << std::endl; 
+  report.close();
+
+}
+
 //cluster algorithm
 void
 AodvExample::Process(std::map<int, vector<double> > result) {
@@ -334,29 +391,41 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   map<int, vector<double> > norm_result = Cluster::Normalization(result, size, os);
   LogTraffic(norm_result);
   
-  vector<Cluster> clusters = Cluster::FormClusters(norm_result, w);
-  
-  std::cout << "clusters: " << std::endl;
-  // std::cout << clusters << std::endl;
 
-  vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
+  std::ofstream report;
+  //wipe out old report
+  report.open("aodv.clusters");
+  report.close();
 
-  //report on anomalous clusters
-  os << "number of clusters: " << labelled_clusters.size() << std::endl;
+  vector<double> w_values;
+  vector<int> numCluster, numAnom;
 
-  vector<Cluster>::iterator clusters_itr;
-  for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
-    if (clusters_itr->anomalous) {
-      std::map<int, vector<double> >::iterator samples_itr;
-      std::map<int, vector<double> > samples = clusters_itr->samples;
+  for (int w = 0; w <= 50; w++) {
+    vector<Cluster> clusters = Cluster::FormClusters(norm_result, w);
+    vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
 
-      for (samples_itr = samples.begin(); samples_itr != samples.end(); samples_itr++) {
-        os << "Node: " << samples_itr->first << " anomalous" << std::endl;
+    int numberAnomClusters = 0;
+    vector<Cluster>::iterator clusters_itr;
+    for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
+      if (clusters_itr->anomalous) {
+        numberAnomClusters++;
+        std::map<int, vector<double> >::iterator samples_itr;
+        std::map<int, vector<double> > samples = clusters_itr->samples;
+
+        // for (samples_itr = samples.begin(); samples_itr != samples.end(); samples_itr++) {
+        //   os << "Node " << samples_itr->first << " is anomalous" << std::endl;
+        // }
       }
     }
-    os << "not anomalous\n";
+
+    os << "Number of anomalous clusters: " << numberAnomClusters << std::endl;
+
+    w_values.push_back(w);
+    numCluster.push_back(clusters.size());
+    numAnom.push_back(numberAnomClusters);
   }
 
+  w_cluster_table(w_values, numCluster, numAnom);
   Log(os);
 }
 
