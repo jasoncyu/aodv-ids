@@ -1632,8 +1632,8 @@ RoutingProtocol::AckTimerExpire (Ipv4Address neighbor, Time blacklistTimeout)
 }
 
 
-vector<double>
-RoutingProtocol::GetMonitoredData() 
+void
+RoutingProtocol::GetMonitoredData(Traffic& traffic) 
 {
   vector<double> traffic;
 
@@ -1644,6 +1644,7 @@ RoutingProtocol::GetMonitoredData()
   traffic.push_back(rrep_received);
   traffic.push_back(rerr_sent);
   traffic.push_back(rerr_received);
+  traffic.push_back(hello_sent);
 
   rreq_received = 0;
   rreq_dropped = 0;
@@ -1653,8 +1654,7 @@ RoutingProtocol::GetMonitoredData()
   rrep_received = 0;
   rerr_sent = 0;
   rerr_received = 0;
-
-  return traffic;
+  hello_sent = 0;
 }
 
 void
@@ -1687,6 +1687,8 @@ RoutingProtocol::SendHello ()
         { 
           destination = iface.GetBroadcast ();
         }
+
+      hello_sent++;
       socket->SendTo (packet, 0, InetSocketAddress (destination, AODV_PORT));
     }
 }

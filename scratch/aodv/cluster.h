@@ -14,7 +14,7 @@
 
 struct Cluster
 {
-  static uint32_t const FEATURE_LENGTH = 7;
+  static uint32_t const FEATURE_LENGTH = 8;
   typedef std::pair <int, std::vector<double> > Sample;
   typedef std::vector <double> Traffic;
   typedef std::vector <std::vector<double > > TrafficList;
@@ -37,7 +37,7 @@ struct Cluster
   static Clusters LabelClusters (Clusters clusters, double threshold, uint32_t size, std::ostringstream & os);
 };
 
-
+//(node number, traffic data)
 typedef std::pair <int, std::vector<double> > Sample;
 typedef std::vector <double> Traffic;
 typedef std::vector <std::vector<double > > TrafficList;

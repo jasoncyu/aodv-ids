@@ -174,6 +174,7 @@ private:
   uint32_t rreq_received, rreq_dropped, rreq_sent;
   uint32_t rrep_sent, rrep_forwarded, rrep_received;
   uint32_t rerr_sent, rerr_received;
+  uint32_t hello_sent;
 
 
 private:
@@ -275,7 +276,7 @@ private:
   /// Mark link to neighbor node as unidirectional for blacklistTimeout
   void AckTimerExpire (Ipv4Address neighbor,  Time blacklistTimeout);
   //returns Traffic, then resets it on this node
-  std::vector<double> GetMonitoredData();
+  void GetMonitoredData();
 };
 
 }

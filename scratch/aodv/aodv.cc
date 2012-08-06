@@ -59,6 +59,16 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
     }
 }
 
+
+static void AggregateData () {
+    if (monitor) {
+      // simulator::schedulewithcontext (routing,
+      //                                 seconds (10.0), &getmonitoreddata, 
+      //                                 source, packetsize, numpackets, obs_interval);
+
+      Simulator::Schedule(Seconds())
+    }
+}
   
 
 /**
@@ -160,7 +170,7 @@ AodvExample::AodvExample () :
   size (5),
   //100 is too large, all packets dropped
   step (50),
-  totalTime (10),
+  totalTime (100),
   pcap (true),
   printRoutes (true),
   rss(-80),
@@ -222,7 +232,6 @@ AodvExample::Run ()
 
 void 
 AodvExample::Testing() {
-  // Samples testing = Stats();
 
   // //total number of observations
   // int obs_count = 0;
@@ -268,11 +277,7 @@ AodvExample::Log(std::ostringstream& oss, std::string name)
 Cluster::Samples
 AodvExample::Stats()
 { 
-  double meanRreqSent = 0, meanRreqReceived = 0;
-  // double meanRreqDropped = 0;
-  double meanRrepSent = 0, meanRrepForwarded = 0, meanRrepReceived = 0;
-  double meanRerrSent = 0, meanRerrReceived = 0;
-  std::map<int, vector<double> > result;
+  Samples samples;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
     Ptr<Node> node = *itr;
@@ -283,120 +288,9 @@ AodvExample::Stats()
     if (!monitor)
       continue;
 
-    std::cout << "hit monitor node" << std::endl;
-
-    double rreqSent = 0, rreqReceived = 0; 
-    // double rreqDropped = 0;
-    double rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
-    double rerrSent = 0, rerrReceived = 0;
-    vector<double> traffic;
-
-
-    rreqSent      = routing->GetRreqSent();
-    rreqReceived  = routing->GetRreqReceived();
-    // rreqDropped   = routing->GetRreqDropped();
-    rrepSent      = routing->GetRrepSent();
-    rrepForwarded = routing->GetRrepForwarded();
-    rrepReceived  = routing->GetRrepReceived();
-    rerrSent      = routing->GetRerrSent();
-    rerrReceived  = routing->GetRerrReceived();
-
-    traffic.push_back(rreqSent     );
-    traffic.push_back(rreqReceived );
-    // traffic.push_back(rreqDropped  );
-    traffic.push_back(rrepSent     );
-    traffic.push_back(rrepForwarded);
-    traffic.push_back(rrepReceived );
-    traffic.push_back(rerrSent     );
-    traffic.push_back(rerrReceived );
-
-    int id = node->GetId ();
-    samples.insert(pair<int, vector<double> >(id, traffic));
-
-    meanRreqSent      += rreqSent;
-    meanRreqReceived  += rreqReceived;
-    // meanRreqDropped   += rreqDropped;
-    meanRrepSent      += rreqSent;
-    meanRrepForwarded += rrepForwarded;
-    meanRrepReceived  += rrepReceived;
-    meanRerrSent      += rerrSent;
-    meanRerrReceived  += rerrReceived;
+    Traffic traffic = GetMonitoredData();
+    samples.insert(std::map<int, Traffic>(node->GetId (), traffic);
   }
-  meanRreqSent /= size;
-  meanRreqReceived /= size;
-  // meanRreqDropped /= size;
-  meanRrepSent /= size;
-  meanRrepForwarded /= size;
-  meanRrepReceived /= size;
-  meanRerrSent /= size;
-  meanRerrReceived /= size;
-
-  ostringstream os;
-
-
-  os << "Mean RREQ sent: " << meanRreqSent << std::endl
-     << "Mean RREQ received: " << meanRreqReceived << std::endl
-     // << "Mean RREQ dropped: " << meanRreqDropped << std::endl
-     << "Mean RREP sent: " << meanRrepSent << std::endl
-     << "Mean RREP forwarded: " << meanRrepForwarded << std::endl
-     << "Mean RREP received: " << meanRrepReceived << std::endl
-     << "Mean RERR sent: " << meanRerrSent << std::endl
-     << "Mean RERR received: " << meanRerrReceived << std::endl;
-
-  Log(os);
-
-  assert (samples.size() > 0);
-  return samples;
-}
-
-
-//takes a sample
-void
-AodvExample::LogTraffic(std::map<int, vector<double> > result)
-{
-  std::ostringstream os;
-
-  std::map<int, vector<double> >::iterator result_itr;
-  for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
-    int num = result_itr->first;
-    vector<double> traffic = result_itr->second;
-
-    std::vector<double>::iterator traffic_itr;
-    os << "Node " << num << ": "; 
-
-    for (traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
-      os << *traffic_itr;
-      if (traffic_itr + 1 != traffic.end()) {
-       os << "\t "; 
-      } 
-
-    }
-
-    os << "\n";
-  }
-
-  Log(os);
-}
-
-
-//plots w|clusters_total|clusters_anon
-//plots the vectors it's given in a table
-void 
-AodvExample::w_cluster_table(vector<double> x, vector<int> y, vector<int> z)
-{
-  ostringstream oss;
-
-  //comment character for gnuplot
-  oss << "#";
-  vector<string> headers; 
-  std::string header1, header2, header3;
-  header1 = "w";
-  header2 = "# of clusters";
-  header3 = "# of anon clusters" ;
-
-  headers.push_back(header1);  
-  headers.push_back(header2);  
-  headers.push_back(header3);  
 
   //create table headers
 
@@ -435,6 +329,7 @@ AodvExample::w_cluster_table(vector<double> x, vector<int> y, vector<int> z)
   report << oss.str() << std::endl; 
   report.close();
 
+  return samples
 }
 
 //cluster algorithm
@@ -628,16 +523,33 @@ AodvExample::InstallApplications ()
   // Time obs_interval = Seconds (interval);
 
   for (NodeContainer::Iterator nitr = nodes.Begin(); nitr != nodes.End(); nitr++ ) {
+
+    //get data starting from 10 seconds, every obs_interval seconds
+
+
     Ptr<Node> node = *nitr;
+    BooleanValue monitor;
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
     Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
-    BooleanValue monitor;
+    
     routing->GetAttribute("Monitor", monitor);
+
     if (monitor) {
-      std::cout << "Monitor node found!" << std::endl;
-      // Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
-      //                                 Seconds (2.0), &GenerateTraffic, 
-      //                                 source, packetSize, numPackets, obs_interval);
+      // simulator::schedulewithcontext (routing,
+      //                                 seconds (10.0), &getmonitoreddata, 
+
+      //                                 source, packetsize, numpackets, obs_interval);
+      double obs_interval = 10.0;
+      int multiplier = 0;
+      double current_time = 0.0;
+
+      while (current_time <= totalTime) {
+        Time Tcurrent_time = Seconds (current_time);
+        Traffic traffic;
+        Simulator::Schedule(Tcurrent_time, &GetMonitoredData, routing, traffic);
+        multiplier++;
+        current_time += multiplier * obs_interval;
+      }
     }
   }
   // move node away
