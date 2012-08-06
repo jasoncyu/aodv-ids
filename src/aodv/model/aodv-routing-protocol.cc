@@ -125,6 +125,7 @@ RoutingProtocol::RoutingProtocol () :
   m_rreqCount (0),
   m_rerrCount (0),
   m_malicious (false),
+  m_monitor (false),
   rreq_received(0),
   rreq_dropped(0),
   rreq_sent(0),
@@ -246,6 +247,10 @@ RoutingProtocol::GetTypeId (void)
     .AddAttribute ("Malicious", "Indicates whether this aodv routing protocol is malicious.",
                    BooleanValue (false),
                    MakeBooleanAccessor (&RoutingProtocol::m_malicious),
+                   MakeBooleanChecker ())
+    .AddAttribute ("Monitor", "Indicates whether this aodv routing protocol is the monitor node, with the IDS installed.",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&RoutingProtocol::m_monitor),
                    MakeBooleanChecker ())
     // .AddAttribute ("rreq_received", "number of rreqs received",
     //                UIntegerValue(0), 
@@ -1624,6 +1629,32 @@ RoutingProtocol::AckTimerExpire (Ipv4Address neighbor, Time blacklistTimeout)
 {
   NS_LOG_FUNCTION (this);
   m_routingTable.MarkLinkAsUnidirectional (neighbor, blacklistTimeout);
+}
+
+
+vector<double>
+RoutingProtocol::GetMonitoredData() 
+{
+  vector<double> traffic;
+
+  traffic.push_back(rreq_received);
+  traffic.push_back(rreq_sent);
+  traffic.push_back(rrep_sent);
+  traffic.push_back(rrep_forwarded);
+  traffic.push_back(rrep_received);
+  traffic.push_back(rerr_sent);
+  traffic.push_back(rerr_received);
+
+  rreq_received = 0;
+  rreq_dropped = 0;
+  rreq_sent = 0;
+  rrep_sent = 0;
+  rrep_forwarded = 0;
+  rrep_received = 0;
+  rerr_sent = 0;
+  rerr_received = 0;
+
+  return traffic;
 }
 
 void

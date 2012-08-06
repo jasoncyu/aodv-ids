@@ -168,6 +168,7 @@ private:
   /// Number of RERRs used for RERR rate control
   uint16_t m_rerrCount;
   bool m_malicious;
+  bool m_monitor;
   
   /* custom values I'm tracking */
   uint32_t rreq_received, rreq_dropped, rreq_sent;
@@ -273,6 +274,8 @@ private:
   void RouteRequestTimerExpire (Ipv4Address dst);
   /// Mark link to neighbor node as unidirectional for blacklistTimeout
   void AckTimerExpire (Ipv4Address neighbor,  Time blacklistTimeout);
+  //returns Traffic, then resets it on this node
+  std::vector<double> GetMonitoredData();
 };
 
 }

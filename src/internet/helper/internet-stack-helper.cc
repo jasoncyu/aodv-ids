@@ -391,20 +391,30 @@ InternetStackHelper::Install (Ptr<Node> node) const
       BooleanValue mal;
       std::string s = "Malicious";
       node->GetAttribute (s, mal);
+
+      BooleanValue monitor;
+      node->GetAttribute ("Monitor", monitor);
+
       Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
       Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);
 
-      ipv4Routing->TraceConnectWithoutContext ("rreq_count", MakeCallback (&rreq_received_cb));
-
-
-      if (!mal) { 
-        ipv4->SetRoutingProtocol (ipv4Routing);
-        std::cout << "[node " << node->GetId () << " ]" << "unmalicious protocol set" << std::endl;
+      std::cout << "[node " << node->GetId () << "] ";
+      if (mal) {
+        ipv4Routing->SetAttribute ("Malicious", BooleanValue(true));
+        std::cout << "malicious protocol set" << std::endl;
       } else {
-        ipv4Routing->SetAttribute ("Malicious", BooleanValue (true));
-        ipv4->SetRoutingProtocol (ipv4Routing);
-        std::cout << "[node " << node-> GetId () << " ]"<< "malicious protocol set" << std::endl;
+        std::cout << "unmalicious protocol set" << std::endl;
       }
+
+      if (monitor) {
+        ipv4Routing->SetAttribute ("Monitor", BooleanValue(true));
+        std::cout << "[node " << node->GetId () << "] ";
+        std::cout << "monitor node set" << std::endl;
+      }
+
+      // ipv4Routing->TraceConnectWithoutContext ("rreq_count", MakeCallback (&rreq_received_cb));
+
+      ipv4->SetRoutingProtocol (ipv4Routing);
     }
 
   if (m_ipv6Enabled)

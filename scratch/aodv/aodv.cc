@@ -78,11 +78,13 @@ public:
   /// Run simulation
   void Run ();
   /// Report results
-  std::map<int, vector<double> > Stats ();
+  Cluster::Samples Stats ();
   void w_cluster_table(vector<double> x, vector<int> y, vector<int> z);
-  void Process(std::map<int, vector<double> > result);
+  void Training(std::map<int, vector<double> > result);
   void Log(std::ostringstream& os, std::string name = "aodv.report");
   void LogTraffic(std::map<int, vector<double> > result);
+  void Testing();
+  // void TrainMonitors();
 
 private:
   ///\name parameters
@@ -107,6 +109,14 @@ private:
 
   //simulation parameters
   double threshold;
+
+  double w_max;
+  double w_step;
+
+  //traffic samples after being extracted
+  Samples samples;
+  //labelled clusters resulting from normal traffic sim
+  Clusters training;
   //threshold
   //\}
 
@@ -147,7 +157,7 @@ int main (int argc, char **argv)
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (25),
+  size (5),
   //100 is too large, all packets dropped
   step (50),
   totalTime (10),
@@ -160,7 +170,9 @@ AodvExample::AodvExample () :
   verbose(false),
   malicious(false),
   trace(true),
-  threshold(0.10)
+  threshold(0.10),
+  w_max(4),
+  w_step(0.1)
 {
 }
 
@@ -200,9 +212,44 @@ AodvExample::Run ()
   Simulator::Run ();
   Simulator::Destroy ();
 
-  std::map<int, vector<double> > samples = Stats();
-  Process (samples);
+  //generates the training data needed
+  samples = Stats();
+  
+  //Saves training data to training 
+  Training (samples);
+  // Testing();
 }
+
+void 
+AodvExample::Testing() {
+  // Samples testing = Stats();
+
+  // //total number of observations
+  // int obs_count = 0;
+  // //number of samples on which the monitor detects an anomaly
+  // int anomalous_count = 0;
+
+  // for (double w = 0; w <= w_max; w += w_step) {
+  //   RelativeCluster closest_relcluster = ClosestCluster(sample, clusters);
+
+  //   double distance = closest_relcluster.first;
+
+  //   if (distance < w) {
+  //     anomalous_count++;
+  //   }
+  }
+
+
+
+  // while (multiplier <= total_obs) {  
+    // Simulator::Schedule(Secon)
+  // }
+  //every monitor_step seconds,
+  //extract data from monitor node and reset monitor node data 
+  //label as same label as closest cluster if it is less than w away
+  //otherwise, label as anomalous
+
+  //did we detect attack traffic?
 
 void 
 AodvExample::Log(std::ostringstream& oss, std::string name)
@@ -217,7 +264,8 @@ AodvExample::Log(std::ostringstream& oss, std::string name)
 }
 
 //returns (node #, traffic vector (vector<double))
-std::map<int, vector<double> >
+
+Cluster::Samples
 AodvExample::Stats()
 { 
   double meanRreqSent = 0, meanRreqReceived = 0;
@@ -227,15 +275,22 @@ AodvExample::Stats()
   std::map<int, vector<double> > result;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
+    Ptr<Node> node = *itr;
+    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
+    BooleanValue monitor;
+    routing->GetAttribute("Monitor", monitor);
+    if (!monitor)
+      continue;
+
+    std::cout << "hit monitor node" << std::endl;
+
     double rreqSent = 0, rreqReceived = 0; 
     // double rreqDropped = 0;
     double rrepSent = 0, rrepForwarded = 0, rrepReceived = 0;
     double rerrSent = 0, rerrReceived = 0;
     vector<double> traffic;
 
-    Ptr<Node> node = *itr;
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
-    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
 
     rreqSent      = routing->GetRreqSent();
     rreqReceived  = routing->GetRreqReceived();
@@ -256,7 +311,7 @@ AodvExample::Stats()
     traffic.push_back(rerrReceived );
 
     int id = node->GetId ();
-    result.insert(pair<int, vector<double> >(id, traffic));
+    samples.insert(pair<int, vector<double> >(id, traffic));
 
     meanRreqSent      += rreqSent;
     meanRreqReceived  += rreqReceived;
@@ -290,7 +345,8 @@ AodvExample::Stats()
 
   Log(os);
 
-  return result;
+  assert (samples.size() > 0);
+  return samples;
 }
 
 
@@ -383,14 +439,14 @@ AodvExample::w_cluster_table(vector<double> x, vector<int> y, vector<int> z)
 
 //cluster algorithm
 void
-AodvExample::Process(std::map<int, vector<double> > result) {
-  LogTraffic(result);
+AodvExample::Training(Samples samples) {
+  LogTraffic(samples);
 
-  std::ostringstream os;
+  std::ostringstream oss;
 
-  map<int, vector<double> > norm_result = Cluster::Normalization(result, size, os);
-  LogTraffic(norm_result);
-  
+  std::cout << "Number of samples should be 1. Actual: " << samples.size() << std::endl;
+  map<int, vector<double> > norm_samples = Cluster::Normalization(samples, size, oss);
+  LogTraffic(norm_samples);
 
   std::ofstream report;
   //wipe out old report
@@ -400,9 +456,11 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   vector<double> w_values;
   vector<int> numCluster, numAnom;
 
-  for (int w = 0; w <= 50; w++) {
-    vector<Cluster> clusters = Cluster::FormClusters(norm_result, w);
-    vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, os);
+  for (double w = 0; w <= w_max; w += w_step) {
+    vector<Cluster> clusters = Cluster::FormClusters(norm_samples, w);
+    vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, oss);
+
+    training = labelled_clusters;
 
     int numberAnomClusters = 0;
     vector<Cluster>::iterator clusters_itr;
@@ -418,7 +476,7 @@ AodvExample::Process(std::map<int, vector<double> > result) {
       }
     }
 
-    os << "Number of anomalous clusters: " << numberAnomClusters << std::endl;
+    oss << "Number of anomalous clusters: " << numberAnomClusters << std::endl;
 
     w_values.push_back(w);
     numCluster.push_back(clusters.size());
@@ -426,7 +484,7 @@ AodvExample::Process(std::map<int, vector<double> > result) {
   }
 
   w_cluster_table(w_values, numCluster, numAnom);
-  Log(os);
+  Log(oss);
 }
 
 void
@@ -478,6 +536,8 @@ void
 AodvExample::InstallInternetStack ()
 {
   AodvHelper aodv;
+  Ptr<Node> monitor_node = nodes.Get (size - 3);
+  monitor_node->SetAttribute ("Monitor", BooleanValue (true));
   // you can configure AODV attributes here using aodv.Set(name, value)
   if (malicious) {
     Ptr<Node> mal_node = nodes.Get (size - 2);
@@ -562,6 +622,23 @@ AodvExample::InstallApplications ()
     ApplicationContainer p = ping.Install (nodes.Get (sourceNode));
     p.Start (Seconds (0));
     p.Stop (Seconds (totalTime) - Seconds (0.001));
+  }
+
+  //schedule getting traffic from monitor node 
+  // Time obs_interval = Seconds (interval);
+
+  for (NodeContainer::Iterator nitr = nodes.Begin(); nitr != nodes.End(); nitr++ ) {
+    Ptr<Node> node = *nitr;
+    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
+    BooleanValue monitor;
+    routing->GetAttribute("Monitor", monitor);
+    if (monitor) {
+      std::cout << "Monitor node found!" << std::endl;
+      // Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
+      //                                 Seconds (2.0), &GenerateTraffic, 
+      //                                 source, packetSize, numPackets, obs_interval);
+    }
   }
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);

@@ -165,6 +165,25 @@ Cluster::Samples Cluster::Normalization (Samples sample, uint32_t size, std::ost
 
     return norm_samples;
   }
+
+Cluster::RelativeCluster Cluster::ClosestRelCluster(Traffic traffic, Clusters clusters) {
+  assert (clusters.size() != 0);
+
+  Cluster closest_cluster = clusters[0];
+  double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+
+  Clusters::iterator clusters_itr;
+  //find the nearest cluster to the sample
+  for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
+    double new_distance = Cluster::Distance(traffic, *clusters_itr);
+    if (new_distance < closest_cluster_distance) {
+      closest_cluster = *clusters_itr;
+      closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+    }
+  }
+
+  return RelativeCluster(closest_cluster_distance, closest_cluster);
+}
 Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
                                                                {
     Clusters clusters;
@@ -181,20 +200,11 @@ Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
         clusters.push_back(c);
       } else {
         Traffic traffic = norm_samples_itr->second;
-        assert (clusters.size() != 0);
-        Cluster closest_cluster = clusters[0];
-        // std::cout << "closest_cluster: " << closest_cluster;
-        double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
-        // std::cout << "initial closest cluster distance: " << closest_cluster_distance << std::endl;
 
-        //find the nearest cluster to the sample
-        for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
-          double new_distance = Cluster::Distance(traffic, *clusters_itr);
-          if (new_distance < closest_cluster_distance) {
-            closest_cluster = *clusters_itr;
-            closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
-          }
-        }
+        RelativeCluster closest_relcluster = ClosestRelCluster(traffic, clusters);
+
+        double closest_cluster_distance = closest_relcluster.first; 
+        Cluster closest_cluster = closest_relcluster.second;
 
         // std::cout << "cluster distance: " << closest_cluster_distance << std::endl;
         if (closest_cluster_distance < w) {
