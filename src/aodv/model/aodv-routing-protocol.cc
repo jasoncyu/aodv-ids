@@ -134,6 +134,7 @@ RoutingProtocol::RoutingProtocol () :
   rrep_received(0),
   rerr_sent(0),
   rerr_received(0),
+  hello_sent(0),
   m_htimer (Timer::CANCEL_ON_DESTROY),
   m_rreqRateLimitTimer (Timer::CANCEL_ON_DESTROY),
   m_rerrRateLimitTimer (Timer::CANCEL_ON_DESTROY)
@@ -1633,10 +1634,8 @@ RoutingProtocol::AckTimerExpire (Ipv4Address neighbor, Time blacklistTimeout)
 
 
 void
-RoutingProtocol::GetMonitoredData(Traffic& traffic) 
+RoutingProtocol::GetMonitoredData(vector<double>& traffic) 
 {
-  vector<double> traffic;
-
   traffic.push_back(rreq_received);
   traffic.push_back(rreq_sent);
   traffic.push_back(rrep_sent);

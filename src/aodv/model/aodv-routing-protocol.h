@@ -99,6 +99,8 @@ public:
   uint32_t GetRrepReceived () const {return rrep_received; }
   uint32_t GetRerrSent () const {return rerr_sent; }
   uint32_t GetRerrReceived () const {return rerr_received; }
+  //returns Traffic, then resets it on this node
+  void GetMonitoredData(std::vector<double>& traffic);
   //\}
 private:
   ///\name Protocol parameters.
@@ -275,8 +277,6 @@ private:
   void RouteRequestTimerExpire (Ipv4Address dst);
   /// Mark link to neighbor node as unidirectional for blacklistTimeout
   void AckTimerExpire (Ipv4Address neighbor,  Time blacklistTimeout);
-  //returns Traffic, then resets it on this node
-  void GetMonitoredData();
 };
 
 }

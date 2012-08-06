@@ -1,8 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
  * Copyright (c) 2009 IITP RAS *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
+ * This program is free software; you can redistribute it and/or modify * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation; *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -38,6 +37,7 @@
 #include <iomanip>
 //I made these
 #include "cluster.h"
+#include "table.h"
 using namespace ns3;
 void ReceivePacket (Ptr<Socket> socket)
 {
@@ -60,16 +60,10 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 }
 
 
-static void AggregateData () {
-    if (monitor) {
-      // simulator::schedulewithcontext (routing,
-      //                                 seconds (10.0), &getmonitoreddata, 
-      //                                 source, packetsize, numpackets, obs_interval);
+static void WhatTimeIsIt() {
+  std::cout << "It is now " << Simulator::Now().GetSeconds () << " seconds " << std::endl; 
+}  
 
-      Simulator::Schedule(Seconds())
-    }
-}
-  
 
 /**
  * \brief Test script.
@@ -94,6 +88,7 @@ public:
   void Log(std::ostringstream& os, std::string name = "aodv.report");
   void LogTraffic(std::map<int, vector<double> > result);
   void Testing();
+  void AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, Cluster::TrafficList traffic_list);
   // void TrainMonitors();
 
 private:
@@ -126,8 +121,9 @@ private:
   //traffic samples after being extracted
   Samples samples;
   //labelled clusters resulting from normal traffic sim
-  Clusters training;
-  //threshold
+  Clusters training_clusters;
+  // map of (nodeID, trafficlist)
+  TrainingData training_data;
   //\}
 
   ///\name network
@@ -227,6 +223,7 @@ AodvExample::Run ()
   
   //Saves training data to training 
   Training (samples);
+  TrainingDataTable();
   // Testing();
 }
 
@@ -288,50 +285,61 @@ AodvExample::Stats()
     if (!monitor)
       continue;
 
-    Traffic traffic = GetMonitoredData();
-    samples.insert(std::map<int, Traffic>(node->GetId (), traffic);
+    Traffic traffic;
+    routing->GetMonitoredData(traffic);
+
+    samples.insert(std::pair<int, Traffic>(node->GetId (), traffic));
+  }
+  return samples;
+}
+//takes a sample
+void
+AodvExample::LogTraffic(std::map<int, vector<double> > result)
+{
+  std::ostringstream os;
+
+  std::map<int, vector<double> >::iterator result_itr;
+  for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
+    int num = result_itr->first;
+    vector<double> traffic = result_itr->second;
+
+    std::vector<double>::iterator traffic_itr;
+    os << "Node " << num << ": "; 
+
+    for (traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
+      os << *traffic_itr;
+      if (traffic_itr + 1 != traffic.end()) {
+       os << "\t "; 
+      } 
+
+    }
+
+    os << "\n";
   }
 
-  //create table headers
-
-  vector<string>::iterator itr = headers.begin();
-  while (itr != headers.end()) {
-    oss << setw(5) << *itr;
-    itr++;
-    if (itr != headers.end())
-      oss << " | ";
-  }
-
-  oss << "\n";
-
-  // int columns = headers.size();
-  vector<double>::iterator x_itr = x.begin();
-  vector<int>::iterator y_itr = y.begin();
-  vector<int>::iterator z_itr = z.begin();
-
-  while (x_itr != x.end()) {
-    oss << setw(header1.size()) << *x_itr;
-    oss << setw(header2.size()) << *y_itr;
-    oss << setw(header3.size()) << *z_itr << std::endl;
-
-    x_itr++;
-    y_itr++;
-    z_itr++;
-  }
-
-  ofstream report;
-
-  report.open("aodv.clusters", ios::app);
-  if (!report.is_open ()) {
-    std::cout << "ERROR: could not open file" << std::endl;
-  }
-
-  report << oss.str() << std::endl; 
-  report.close();
-
-  return samples
+  Log(os);
 }
 
+
+void
+AodvExample::TrainingDataTable() {
+  vector<std::string> headers;
+  headers.push_back("RREQ_RECEIVED");
+  headers.push_back("RREQ_SENT");
+  headers.push_back("RREP_SENT");
+  headers.push_back("RREP_FORWARDED");
+  headers.push_back("RREP_RECEIVED");
+  headers.push_back("RERR_SENT");
+  headers.push_back("RERR_RECEIVED");
+  headers.push_back("HELLO_SENT");
+
+  TrainingData::iterator itr = training_data.begin();
+
+  int num = itr->first;
+  TrafficList tl = itr->second;
+
+  CreateTables("aodv.training", headers, tl)
+}
 //cluster algorithm
 void
 AodvExample::Training(Samples samples) {
@@ -341,7 +349,7 @@ AodvExample::Training(Samples samples) {
 
   std::cout << "Number of samples should be 1. Actual: " << samples.size() << std::endl;
   map<int, vector<double> > norm_samples = Cluster::Normalization(samples, size, oss);
-  LogTraffic(norm_samples);
+  LogTraffic(norm_samples)
 
   std::ofstream report;
   //wipe out old report
@@ -382,6 +390,63 @@ AodvExample::Training(Samples samples) {
   Log(oss);
 }
 
+//plots w|clusters_total|clusters_anon
+//plots the vectors it's given in a table
+void 
+AodvExample::w_cluster_table(vector<double> x, vector<int> y, vector<int> z)
+{
+  ostringstream oss;
+
+  //comment character for gnuplot
+  oss << "#";
+  vector<string> headers; 
+  std::string header1, header2, header3;
+  header1 = "w";
+  header2 = "# of clusters";
+  header3 = "# of anon clusters" ;
+
+  headers.push_back(header1);  
+  headers.push_back(header2);  
+  headers.push_back(header3);  
+
+  //create table headers
+
+  vector<string>::iterator itr = headers.begin();
+  while (itr != headers.end()) {
+    oss << setw(5) << *itr;
+    itr++;
+    if (itr != headers.end())
+      oss << " | ";
+  }
+
+  oss << "\n";
+
+  // int columns = headers.size();
+  vector<double>::iterator x_itr = x.begin();
+  vector<int>::iterator y_itr = y.begin();
+  vector<int>::iterator z_itr = z.begin();
+
+  while (x_itr != x.end()) {
+    oss << setw(header1.size()) << *x_itr;
+    oss << setw(header2.size()) << *y_itr;
+    oss << setw(header3.size()) << *z_itr << std::endl;
+
+    x_itr++;
+    y_itr++;
+    z_itr++;
+  }
+
+  ofstream report;
+
+  report.open("aodv.clusters", ios::app);
+  if (!report.is_open ()) {
+    std::cout << "ERROR: could not open file" << std::endl;
+  }
+
+  report << oss.str() << std::endl; 
+  report.close();
+
+}
 void
 AodvExample::CreateNodes () {
   std::cout << "Creating " << (unsigned)size << " nodes " << step << " m apart.\n";
@@ -461,37 +526,6 @@ AodvExample::InstallInternetStack ()
 void
 AodvExample::InstallApplications ()
 {
-  // new traffic
-  // TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-  // Ptr<Socket> recvSink = Socket::CreateSocket (nodes.Get (0), tid);
-  // InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
-  // recvSink->Bind (local);
-  // recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
-
-  // Ptr<Socket> source = Socket::CreateSocket (nodes.Get (size - 1), tid);
-  // InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
-  // source->SetAllowBroadcast (true);
-  // source->Connect (remote);
-
-  // // NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
-
-  // Time interPacketInterval = Seconds (interval);
-
-  // Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
-  //                                 Seconds (2.0), &GenerateTraffic, 
-  //                                 source, packetSize, numPackets, interPacketInterval);
-
-  //mobility
-  // Ptr<Node> node = nodes.Get (size/2);
-  // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
-  // Simulator::Schedule (Seconds (1.0), &MobilityModel::SetPosition, mob, Vector(100, 50, 0));
-
-
-  //original traffic
-  // V4PingHelper ping (interfaces.GetAddress (size - 1));
-  // ping.SetAttribute ("Verbose", BooleanValue (true));
-  // ping.SetAttribute ("Interval", TimeValue (Seconds (interval)));
-
   // ApplicationContainer p = ping.Install (nodes.Get (0));
   // p.Start (Seconds (0));
   // p.Stop (Seconds (totalTime) - Seconds (0.001));
@@ -525,8 +559,6 @@ AodvExample::InstallApplications ()
   for (NodeContainer::Iterator nitr = nodes.Begin(); nitr != nodes.End(); nitr++ ) {
 
     //get data starting from 10 seconds, every obs_interval seconds
-
-
     Ptr<Node> node = *nitr;
     BooleanValue monitor;
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
@@ -535,21 +567,19 @@ AodvExample::InstallApplications ()
     routing->GetAttribute("Monitor", monitor);
 
     if (monitor) {
-      // simulator::schedulewithcontext (routing,
-      //                                 seconds (10.0), &getmonitoreddata, 
-
-      //                                 source, packetsize, numpackets, obs_interval);
+      Cluster::TrafficList traffic_list;
       double obs_interval = 10.0;
-      int multiplier = 0;
-      double current_time = 0.0;
+      double current_time = 10.0;
 
       while (current_time <= totalTime) {
         Time Tcurrent_time = Seconds (current_time);
-        Traffic traffic;
-        Simulator::Schedule(Tcurrent_time, &GetMonitoredData, routing, traffic);
-        multiplier++;
-        current_time += multiplier * obs_interval;
+        Simulator::Schedule(Tcurrent_time, &GetMonitoredData, routing, traffic_list);
+        // Simulator::Schedule(Tcurrent_time, &WhatTimeIsIt);
+        current_time += obs_interval;
       }
+
+      trainingDatum td(node->GetID (), traffic_list);
+      trainingData.insert(td);
     }
   }
   // move node away
@@ -558,3 +588,9 @@ AodvExample::InstallApplications ()
   // Simulator::Schedule (Seconds (totalTime/3), &MobilityModel::SetPosition, mob, Vector (1e5, 1e5, 1e5));
 }
 
+void
+AodvExample::AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, Cluster::TrafficList traffic_list) {
+  Cluster::Traffic traffic;
+  routing->GetMonitoredData(traffic); 
+  traffic_list.push_back(traffic);
+}
