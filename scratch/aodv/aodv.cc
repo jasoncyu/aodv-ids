@@ -223,10 +223,9 @@ AodvExample::Run ()
   Simulator::Destroy ();
 
   //generates the training data needed
-  samples = Stats();
   
   //Saves training data to training 
-  Training (samples);
+  Training(); 
   TrainingDataTable();
   Testing();
 }
@@ -312,29 +311,6 @@ AodvExample::Log(std::ostringstream& oss, std::string name)
   report.close();
 }
 
-//returns (node #, traffic vector (vector<double))
-
-TrainingData
-AodvExample::Stats()
-{ 
-  // Samples samples;
-  
-  for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
-    Ptr<Node> node = *itr;
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
-    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
-    BooleanValue monitor;
-    routing->GetAttribute("Monitor", monitor);
-    if (!monitor)
-      continue;
-
-    Traffic traffic;
-    routing->GetMonitoredData(traffic);
-
-    samples.insert(std::pair<int, Traffic>(node->GetId (), traffic));
-  }
-  return samples;
-}
 //takes a sample
 void
 AodvExample::LogTraffic(std::map<int, vector<double> > result)
@@ -380,9 +356,7 @@ AodvExample::TrainingDataTable() {
 }
 //cluster algorithm
 void
-AodvExample::Training(Samples samples) {
-  LogTraffic(samples);
-
+AodvExample::Training() {
   std::ostringstream oss;
 
   std::cout << "Number of samples should be 1. Actual: " << samples.size() << std::endl;
