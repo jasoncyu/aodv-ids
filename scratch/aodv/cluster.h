@@ -16,17 +16,10 @@
 struct Cluster
 {
   static uint32_t const FEATURE_LENGTH = 8;
-  // typedef std::pair <int, std::vector<double> > Sample;
-  // typedef std::vector <double> Traffic;
-  // typedef std::vector <std::vector<double > > TrafficList;
-  // typedef std::map <int, std::vector<double> > Samples;
-  // typedef std::vector <Cluster> Clusters;
-  // typedef std::pair<double,Cluster> RelativeCluster;
-  // typedef std::pair <int, TrafficList> trainingDatum;
-  // typedef std::map <int, TrafficList> trainingData;
+  bool anomalous;
   Traffic centroid;
   Samples samples;
-  bool anomalous;
+  
   Cluster ();
   void add (Sample & sample);
   void updateCentroid ();
@@ -39,16 +32,6 @@ struct Cluster
   static Clusters FormClusters (Samples norm_samples, double w);
   static Clusters LabelClusters (Clusters clusters, double threshold, uint32_t size, std::ostringstream & os);
 };
-
-//(node number)
-// typedef std::pair <int, std::vector<double> > Sample;
-// typedef std::vector <double> Traffic;
-// typedef std::vector <std::vector<double > > TrafficList;
-// typedef std::map <int, std::vector<double> > Samples;
-// typedef std::vector <Cluster> Clusters;
-// typedef std::pair<double,Cluster> RelativeCluster;
-// typedef std::pair <int, TrafficList> trainingDatum;
-// typedef std::map <int, TrafficList> trainingData;
 
 std::ostream & operator << (std::ostream & out, Cluster const c);
 //Clusters

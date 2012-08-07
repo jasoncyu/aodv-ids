@@ -17,7 +17,7 @@
  * Authors: Pavel Boyko <boyko@iitp.ru>
  */
 
- //TODO: refactor to use the typedefs in cluster
+ //TODO: mess with random seed
 
 #include "ns3/aodv-module.h"
 #include "ns3/core-module.h"
@@ -181,7 +181,7 @@ AodvExample::AodvExample () :
   malicious(false),
   trace(true),
   threshold(0.10),
-  w_max(4),
+  w_max(1),
   w_step(0.1)
 {
 }
@@ -228,26 +228,65 @@ AodvExample::Run ()
   //Saves training data to training 
   Training (samples);
   TrainingDataTable();
-  // Testing();
+  Testing();
 }
 
 void 
 AodvExample::Testing() {
+  ostringstream oss;
 
-  // //total number of observations
-  // int obs_count = 0;
-  // //number of samples on which the monitor detects an anomaly
-  // int anomalous_count = 0;
+  //total number of observations
+  int obs_count = 0;
+  //number of samples on which the monitor detects an anomaly
+  int anomalous_count = 0;
 
-  // for (double w = 0; w <= w_max; w += w_step) {
-  //   RelativeCluster closest_relcluster = ClosestCluster(sample, clusters);
 
-  //   double distance = closest_relcluster.first;
+  //go through different w-values. We expect lower w-values to 
+  //have a higher false positive rate
+  for (double w = 0; w <= w_max; w += w_step) {
+    TrainingData::iterator tditr = training_data.begin();
 
-  //   if (distance < w) {
-  //     anomalous_count++;
-  //   }
+    //go through all the monitor nodes. Right now, we have only one,
+    //so this should run once
+    while (tditr != training_data.end()) {
+      TrafficList traffic_list = tditr->second;
+
+      TrafficList::iterator tlitr = traffic_list.begin();
+
+      //go through all the traffic of this monitor node
+      //traffic is taken at regular intervals
+      while (tlitr != traffic_list.end()) {
+        Traffic traffic = *tlitr;
+
+        RelativeCluster closest_relcluster = Cluster::ClosestRelCluster(traffic, training_clusters);
+
+        double distance = closest_relcluster.first;
+        Cluster closest_cluster = closest_relcluster.second;
+
+        obs_count++;
+        //if the closest cluster is less than w away, we label
+        //the sample with the same label
+        if (distance < w) {
+          if (closest_cluster.anomalous) { anomalous_count++; }
+          //otherwise, we consider as not anomalous
+        }
+
+        tlitr++;
+      }
+      tditr++;
+    }
   }
+
+  assert (obs_count != 0);
+
+
+  oss << "Anomaloust count: " << anomalous_count << std::endl;
+  oss << "Total count: " << obs_count << std::endl;
+  double detection_rate = anomalous_count/obs_count;
+  oss << "Detection rate: " << detection_rate << std::endl;
+
+  Log(oss);
+}
 
 
 
@@ -275,10 +314,10 @@ AodvExample::Log(std::ostringstream& oss, std::string name)
 
 //returns (node #, traffic vector (vector<double))
 
-Samples
+TrainingData
 AodvExample::Stats()
 { 
-  Samples samples;
+  // Samples samples;
   
   for (NodeContainer::Iterator itr = nodes.Begin(); itr != nodes.End(); ++itr) {
     Ptr<Node> node = *itr;
@@ -355,13 +394,18 @@ AodvExample::Training(Samples samples) {
   report.open("aodv.clusters");
   report.close();
 
+
+  //these are vectors because we're getting one for each w-value
+  //and so we can output to a table
   vector<double> w_values;
   vector<int> numCluster, numAnom;
 
+  //for different w-values
   for (double w = 0; w <= w_max; w += w_step) {
     vector<Cluster> clusters = Cluster::FormClusters(norm_samples, w);
     vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, oss);
 
+    //set member variable
     training_clusters = labelled_clusters;
 
     int numberAnomClusters = 0;
@@ -371,14 +415,8 @@ AodvExample::Training(Samples samples) {
         numberAnomClusters++;
         std::map<int, vector<double> >::iterator samples_itr;
         std::map<int, vector<double> > samples = clusters_itr->samples;
-
-        // for (samples_itr = samples.begin(); samples_itr != samples.end(); samples_itr++) {
-        //   os << "Node " << samples_itr->first << " is anomalous" << std::endl;
-        // }
       }
     }
-
-    oss << "Number of anomalous clusters: " << numberAnomClusters << std::endl;
 
     w_values.push_back(w);
     numCluster.push_back(clusters.size());
@@ -576,9 +614,6 @@ AodvExample::InstallApplications ()
         // Simulator::Schedule(Tcurrent_time, &WhatTimeIsIt);
         current_time += obs_interval;
       }
-
-      TrainingDatum td(node->GetId (), traffic_list);
-      training_data.insert(td);
     }
   }
   // move node away

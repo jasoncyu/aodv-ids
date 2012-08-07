@@ -14,7 +14,7 @@ Table::TableHeaders(vector<string> header_names, ostringstream& oss) {
   vector<string>::iterator itr = header_names.begin();  
   while (itr != header_names.end())
   {
-    widths.push_back(itr->size());
+    widths.push_back(itr->size() + 3);
     oss << setw(itr->size()) << *itr;
     itr++;
     if (itr != header_names.end())
