@@ -1,6 +1,5 @@
-
+#include "common.h"
 #include "cluster.h"
-// using namespace Cluster;
 
 
 Cluster::Cluster ()
@@ -50,7 +49,8 @@ void Cluster::updateCentroid ()
 
     centroid = sum; 
   }
-Cluster::Traffic Cluster::addTraffic (Traffic x, Traffic y)
+
+Traffic Cluster::addTraffic (Traffic x, Traffic y)
                                            {
     Traffic::iterator itr1 = x.begin();
     Traffic::iterator itr2 = y.begin();
@@ -66,7 +66,7 @@ Cluster::Traffic Cluster::addTraffic (Traffic x, Traffic y)
 
     return sum;
   }
-Cluster::Sample Cluster::outermost ()
+Sample Cluster::outermost ()
                      {
     Samples::iterator samples_itr = samples.begin();
     Sample farthest_sample = *samples_itr; 
@@ -105,7 +105,7 @@ double Cluster::Distance (Traffic traffic, Cluster c)
    distance = sqrt(distance);
    return distance;
   }
-Cluster::Samples Cluster::Normalization (Samples sample, uint32_t size, std::ostringstream & os)
+Samples Cluster::Normalization (Samples sample, uint32_t size, std::ostringstream & os)
                                                                                       {
     //normalization
 
@@ -166,7 +166,7 @@ Cluster::Samples Cluster::Normalization (Samples sample, uint32_t size, std::ost
     return norm_samples;
   }
 
-Cluster::RelativeCluster Cluster::ClosestRelCluster(Traffic traffic, Clusters clusters) {
+RelativeCluster Cluster::ClosestRelCluster(Traffic traffic, Clusters clusters) {
   assert (clusters.size() != 0);
 
   Cluster closest_cluster = clusters[0];
@@ -184,7 +184,7 @@ Cluster::RelativeCluster Cluster::ClosestRelCluster(Traffic traffic, Clusters cl
 
   return RelativeCluster(closest_cluster_distance, closest_cluster);
 }
-Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
+Clusters Cluster::FormClusters (Samples norm_samples, double w)
                                                                {
     Clusters clusters;
     Clusters::iterator clusters_itr;
@@ -224,7 +224,7 @@ Cluster::Clusters Cluster::FormClusters (Samples norm_samples, double w)
 
     return clusters;
   }
-Cluster::Clusters Cluster::LabelClusters (Clusters clusters, double threshold, uint32_t size, std::ostringstream & os)
+Clusters Cluster::LabelClusters (Clusters clusters, double threshold, uint32_t size, std::ostringstream & os)
                                                                                                             {
     Clusters::iterator clusters_itr;
 

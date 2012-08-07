@@ -36,6 +36,7 @@
 #include <cassert>
 #include <iomanip>
 //I made these
+#include "common.h"
 #include "cluster.h"
 #include "table.h"
 using namespace ns3;
@@ -60,9 +61,9 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 }
 
 
-static void WhatTimeIsIt() {
-  std::cout << "It is now " << Simulator::Now().GetSeconds () << " seconds " << std::endl; 
-}  
+// static void WhatTimeIsIt() {
+//   std::cout << "It is now " << Simulator::Now().GetSeconds () << " seconds " << std::endl; 
+// }  
 
 
 /**
@@ -82,14 +83,14 @@ public:
   /// Run simulation
   void Run ();
   /// Report results
-  Cluster::Samples Stats ();
+  Samples Stats ();
   void w_cluster_table(vector<double> x, vector<int> y, vector<int> z);
   void Training(std::map<int, vector<double> > result);
   void Log(std::ostringstream& os, std::string name = "aodv.report");
   void LogTraffic(std::map<int, vector<double> > result);
   void Testing();
-  void AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, Cluster::TrafficList traffic_list);
-  // void TrainMonitors();
+  void AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, TrafficList traffic_list);
+  void TrainingDataTable();
 
 private:
   ///\name parameters
@@ -271,7 +272,7 @@ AodvExample::Log(std::ostringstream& oss, std::string name)
 
 //returns (node #, traffic vector (vector<double))
 
-Cluster::Samples
+Samples
 AodvExample::Stats()
 { 
   Samples samples;
@@ -333,12 +334,7 @@ AodvExample::TrainingDataTable() {
   headers.push_back("RERR_RECEIVED");
   headers.push_back("HELLO_SENT");
 
-  TrainingData::iterator itr = training_data.begin();
-
-  int num = itr->first;
-  TrafficList tl = itr->second;
-
-  CreateTables("aodv.training", headers, tl)
+  Table::CreateTables("aodv.training", headers, training_data);
 }
 //cluster algorithm
 void
@@ -349,7 +345,7 @@ AodvExample::Training(Samples samples) {
 
   std::cout << "Number of samples should be 1. Actual: " << samples.size() << std::endl;
   map<int, vector<double> > norm_samples = Cluster::Normalization(samples, size, oss);
-  LogTraffic(norm_samples)
+  LogTraffic(norm_samples);
 
   std::ofstream report;
   //wipe out old report
@@ -363,7 +359,7 @@ AodvExample::Training(Samples samples) {
     vector<Cluster> clusters = Cluster::FormClusters(norm_samples, w);
     vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, oss);
 
-    training = labelled_clusters;
+    training_clusters = labelled_clusters;
 
     int numberAnomClusters = 0;
     vector<Cluster>::iterator clusters_itr;
@@ -567,19 +563,19 @@ AodvExample::InstallApplications ()
     routing->GetAttribute("Monitor", monitor);
 
     if (monitor) {
-      Cluster::TrafficList traffic_list;
+      TrafficList traffic_list;
       double obs_interval = 10.0;
       double current_time = 10.0;
 
       while (current_time <= totalTime) {
-        Time Tcurrent_time = Seconds (current_time);
-        Simulator::Schedule(Tcurrent_time, &GetMonitoredData, routing, traffic_list);
+        // Time Tcurrent_time = Seconds (current_time);
+        // Simulator::Schedule(Tcurrent_time, &GetMonitoredData, routing, traffic_list);
         // Simulator::Schedule(Tcurrent_time, &WhatTimeIsIt);
         current_time += obs_interval;
       }
 
-      trainingDatum td(node->GetID (), traffic_list);
-      trainingData.insert(td);
+      TrainingDatum td(node->GetId (), traffic_list);
+      training_data.insert(td);
     }
   }
   // move node away
@@ -589,8 +585,8 @@ AodvExample::InstallApplications ()
 }
 
 void
-AodvExample::AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, Cluster::TrafficList traffic_list) {
-  Cluster::Traffic traffic;
+AodvExample::AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, TrafficList traffic_list) {
+  Traffic traffic;
   routing->GetMonitoredData(traffic); 
   traffic_list.push_back(traffic);
 }

@@ -1,15 +1,27 @@
 // table.h
 //
-
-#include <vector>
-
 #ifndef LZZ_table_h
 #define LZZ_table_h
+
+#include "common.h"
+
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <cmath>
+#include <stdint.h>
+
 class Table
 {
-  vector<int> widths;
-  ostringstream TableHeaders (vector <string> header_names);
-  void TableValues (TrafficList tl);
-  void CreateTables (string file_name, vector <string> header_names, Cluster::TrainingData td);
+  static void TableHeaders (std::vector <std::string> header_names, std::ostringstream& oss);
+  static void TableValues (TrafficList tl, std::ostringstream& oss);
+
+public:
+  static std::vector<int> widths;
+  static void CreateTables (std::string file_name, std::vector <std::string> header_names, TrainingData td);
 };
+
 #endif
