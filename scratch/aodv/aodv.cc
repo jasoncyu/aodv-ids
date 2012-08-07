@@ -39,7 +39,10 @@
 #include "common.h"
 #include "cluster.h"
 #include "table.h"
+
 using namespace ns3;
+// using namespace std;
+
 void ReceivePacket (Ptr<Socket> socket)
 {
   NS_LOG_UNCOND ("Received one packet!");
@@ -89,7 +92,7 @@ public:
   void Log(std::ostringstream& os, std::string name = "aodv.report");
   void LogTraffic(std::map<int, vector<double> > result);
   void Testing();
-  void AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, TrafficList traffic_list);
+  void AggregateTraffic(Ptr<Node> node);
   void TrainingDataTable();
 
 private:
@@ -568,8 +571,8 @@ AodvExample::InstallApplications ()
       double current_time = 10.0;
 
       while (current_time <= totalTime) {
-        // Time Tcurrent_time = Seconds (current_time);
-        // Simulator::Schedule(Tcurrent_time, &GetMonitoredData, routing, traffic_list);
+        Time Tcurrent_time = Seconds (current_time);
+        Simulator::Schedule(Tcurrent_time, &AodvExample::AggregateTraffic, this, node);
         // Simulator::Schedule(Tcurrent_time, &WhatTimeIsIt);
         current_time += obs_interval;
       }
@@ -585,8 +588,22 @@ AodvExample::InstallApplications ()
 }
 
 void
-AodvExample::AggregateTraffic(Ptr<aodv::RoutingProtocol> routing, TrafficList traffic_list) {
+AodvExample::AggregateTraffic(Ptr<Node> node) {
+  Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+  Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
+
   Traffic traffic;
   routing->GetMonitoredData(traffic); 
-  traffic_list.push_back(traffic);
+
+  TrafficList traffic_list;
+  // vector< vector<double> > traffic_list;
+  int node_id = node->GetId ();
+  if (training_data.find(node_id) == training_data.end()) {
+    traffic_list.push_back (traffic);
+  } else {
+    traffic_list = training_data.find(node_id)->second;
+    traffic_list.push_back(traffic);
+    training_data.erase(node_id);
+  }
+  training_data.insert(pair<int, TrafficList>(node_id, traffic_list));
 }
