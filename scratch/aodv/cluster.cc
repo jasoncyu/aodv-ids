@@ -167,12 +167,14 @@ Samples Cluster::Normalization (Samples sample, uint32_t size, std::ostringstrea
   }
 
 RelativeCluster Cluster::ClosestRelCluster(Traffic traffic, Clusters clusters) {
-  assert (clusters.size() != 0);
+  assert (!clusters.empty());
 
-  Cluster closest_cluster = clusters[0];
-  double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+  std::cout << "clusters size: " << clusters.empty() << std::endl;
 
   Clusters::iterator clusters_itr;
+  Cluster closest_cluster = *clusters_itr; 
+  double closest_cluster_distance = Cluster::Distance(traffic, closest_cluster);
+
   //find the nearest cluster to the sample
   for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
     double new_distance = Cluster::Distance(traffic, *clusters_itr);

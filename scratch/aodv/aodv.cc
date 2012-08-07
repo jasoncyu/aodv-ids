@@ -85,15 +85,6 @@ public:
   bool Configure (int argc, char **argv);
   /// Run simulation
   void Run ();
-  /// Report results
-  Samples Stats ();
-  void w_cluster_table(vector<double> x, vector<int> y, vector<int> z);
-  void Training(std::map<int, vector<double> > result);
-  void Log(std::ostringstream& os, std::string name = "aodv.report");
-  void LogTraffic(std::map<int, vector<double> > result);
-  void Testing();
-  void AggregateTraffic(Ptr<Node> node);
-  void TrainingDataTable();
 
 private:
   ///\name parameters
@@ -119,8 +110,7 @@ private:
   //simulation parameters
   double threshold;
 
-  double w_max;
-  double w_step;
+  double w;
 
   //traffic samples after being extracted
   Samples samples;
@@ -138,9 +128,22 @@ private:
   //\}
 
 private:
+  void w_cluster_table(vector<double> x, vector<int> y, vector<int> z);
+  /// Uses training_data to generate training_clusters
+  void Training();
+  // Attack scenario tested.
+  void Testing();
+  void Log(std::ostringstream& os, std::string name = "aodv.report");
+  void LogTraffic(std::map<int, vector<double> > result);
+  void AggregateTraffic(Ptr<Node> node);
+  void TrainingDataTable();
+
   void CreateNodes ();
   void CreateDevices ();
+  //Set monitor and malicious nodes
+  //Set callback needed to get data from monitors  
   void InstallInternetStack ();
+  //install traffic apps. 
   void InstallApplications ();
 };
 
@@ -152,9 +155,7 @@ int main (int argc, char **argv)
 
   test.Run ();
 
-  // Cluster c;
-  // vector<double> sample;
-  // sample.push_back(0.0);
+  // Cluster c; // vector<double> sample; // sample.push_back(0.0);
   // sample.push_back(1.0);
 
   // pair<int, vector<double> > entry;
@@ -170,7 +171,7 @@ AodvExample::AodvExample () :
   size (5),
   //100 is too large, all packets dropped
   step (50),
-  totalTime (100),
+  totalTime (50),
   pcap (true),
   printRoutes (true),
   rss(-80),
@@ -181,8 +182,7 @@ AodvExample::AodvExample () :
   malicious(false),
   trace(true),
   threshold(0.10),
-  w_max(1),
-  w_step(0.1)
+  w(1)
 {
 }
 
@@ -239,41 +239,34 @@ AodvExample::Testing() {
   //number of samples on which the monitor detects an anomaly
   int anomalous_count = 0;
 
+  //go through all the monitor nodes. Right now, we have only one,
+  //so this should run once
+  while (tditr != training_data.end()) {
+    TrafficList traffic_list = tditr->second;
 
-  //go through different w-values. We expect lower w-values to 
-  //have a higher false positive rate
-  for (double w = 0; w <= w_max; w += w_step) {
-    TrainingData::iterator tditr = training_data.begin();
+    TrafficList::iterator tlitr = traffic_list.begin();
 
-    //go through all the monitor nodes. Right now, we have only one,
-    //so this should run once
-    while (tditr != training_data.end()) {
-      TrafficList traffic_list = tditr->second;
+    //go through all the traffic of this monitor node
+    //traffic is taken at regular intervals
+    while (tlitr != traffic_list.end()) {
+      Traffic traffic = *tlitr;
 
-      TrafficList::iterator tlitr = traffic_list.begin();
+      RelativeCluster closest_relcluster = Cluster::ClosestRelCluster(traffic, training_clusters);
 
-      //go through all the traffic of this monitor node
-      //traffic is taken at regular intervals
-      while (tlitr != traffic_list.end()) {
-        Traffic traffic = *tlitr;
+      double distance = closest_relcluster.first;
+      Cluster closest_cluster = closest_relcluster.second;
 
-        RelativeCluster closest_relcluster = Cluster::ClosestRelCluster(traffic, training_clusters);
-
-        double distance = closest_relcluster.first;
-        Cluster closest_cluster = closest_relcluster.second;
-
-        obs_count++;
-        //if the closest cluster is less than w away, we label
-        //the sample with the same label
-        if (distance < w) {
-          if (closest_cluster.anomalous) { anomalous_count++; }
-          //otherwise, we consider as not anomalous
-        }
-
-        tlitr++;
+      obs_count++;
+      //if the closest cluster is less than w away, we label
+      //the sample with the same label
+      if (distance < w) {
+        if (closest_cluster.anomalous) { anomalous_count++; }
+        //otherwise, we consider as not anomalous
       }
-      tditr++;
+
+      tlitr++;
     }
+    tditr++;
   }
 
   assert (obs_count != 0);
@@ -354,6 +347,7 @@ AodvExample::TrainingDataTable() {
 
   Table::CreateTables("aodv.training", headers, training_data);
 }
+
 //cluster algorithm
 void
 AodvExample::Training() {
@@ -368,36 +362,33 @@ AodvExample::Training() {
   report.open("aodv.clusters");
   report.close();
 
-
+  //deprecated
   //these are vectors because we're getting one for each w-value
   //and so we can output to a table
-  vector<double> w_values;
-  vector<int> numCluster, numAnom;
+  // vector<double> w_values;
+  // vector<int> numCluster, numAnom;
 
-  //for different w-values
-  for (double w = 0; w <= w_max; w += w_step) {
-    vector<Cluster> clusters = Cluster::FormClusters(norm_samples, w);
-    vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, oss);
+  vector<Cluster> clusters = Cluster::FormClusters(norm_samples, w);
+  vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, oss);
 
-    //set member variable
-    training_clusters = labelled_clusters;
+  //set member variable
+  training_clusters = labelled_clusters;
 
-    int numberAnomClusters = 0;
-    vector<Cluster>::iterator clusters_itr;
-    for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
-      if (clusters_itr->anomalous) {
-        numberAnomClusters++;
-        std::map<int, vector<double> >::iterator samples_itr;
-        std::map<int, vector<double> > samples = clusters_itr->samples;
-      }
+  int numberAnomClusters = 0;
+  vector<Cluster>::iterator clusters_itr;
+  for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
+    if (clusters_itr->anomalous) {
+      numberAnomClusters++;
+      std::map<int, vector<double> >::iterator samples_itr;
+      std::map<int, vector<double> > samples = clusters_itr->samples;
     }
-
-    w_values.push_back(w);
-    numCluster.push_back(clusters.size());
-    numAnom.push_back(numberAnomClusters);
   }
 
-  w_cluster_table(w_values, numCluster, numAnom);
+  // w_values.push_back(w);
+  // numCluster.push_back(clusters.size());
+  // numAnom.push_back(numberAnomClusters);
+
+  // w_cluster_table(w_values, numCluster, numAnom);
   Log(oss);
 }
 
@@ -519,12 +510,35 @@ AodvExample::InstallInternetStack ()
   stack.SetRoutingHelper (aodv); // has effect on the next Install ()
   stack.Install (nodes);
 
-  // Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
-  // Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);
   Ipv4AddressHelper address;
 
   address.SetBase ("10.0.0.0", "255.0.0.0");
   interfaces = address.Assign (devices);
+
+  //get monitor data
+  for (NodeContainer::Iterator nitr = nodes.Begin(); nitr != nodes.End(); nitr++ ) {
+
+    //get data starting from 10 seconds, every obs_interval seconds
+    Ptr<Node> node = *nitr;
+    BooleanValue monitor;
+    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
+    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
+    
+    routing->GetAttribute("Monitor", monitor);
+
+    if (monitor) {
+      TrafficList traffic_list;
+      double obs_interval = 10.0;
+      double current_time = 10.0;
+
+      while (current_time <= totalTime) {
+        Time Tcurrent_time = Seconds (current_time);
+        Simulator::Schedule(Tcurrent_time, &AodvExample::AggregateTraffic, this, node);
+        // Simulator::Schedule(Tcurrent_time, &WhatTimeIsIt);
+        current_time += obs_interval;
+      }
+    }
+  }
 
   if (printRoutes)
     {
@@ -567,29 +581,6 @@ AodvExample::InstallApplications ()
   //schedule getting traffic from monitor node 
   // Time obs_interval = Seconds (interval);
 
-  for (NodeContainer::Iterator nitr = nodes.Begin(); nitr != nodes.End(); nitr++ ) {
-
-    //get data starting from 10 seconds, every obs_interval seconds
-    Ptr<Node> node = *nitr;
-    BooleanValue monitor;
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
-    Ptr<aodv::RoutingProtocol> routing = ipv4->GetObject<aodv::RoutingProtocol> ();
-    
-    routing->GetAttribute("Monitor", monitor);
-
-    if (monitor) {
-      TrafficList traffic_list;
-      double obs_interval = 10.0;
-      double current_time = 10.0;
-
-      while (current_time <= totalTime) {
-        Time Tcurrent_time = Seconds (current_time);
-        Simulator::Schedule(Tcurrent_time, &AodvExample::AggregateTraffic, this, node);
-        // Simulator::Schedule(Tcurrent_time, &WhatTimeIsIt);
-        current_time += obs_interval;
-      }
-    }
-  }
   // move node away
   // Ptr<Node> node = nodes.Get (size/2);
   // Ptr<MobilityModel> mob = node->GetObject<MobilityModel> ();
