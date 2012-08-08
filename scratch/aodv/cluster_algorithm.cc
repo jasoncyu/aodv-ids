@@ -94,6 +94,9 @@ Clusters ClusterAlg::LabelClusters (Clusters cs)
   for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
     Cluster c = *cs_itr;
     c.criteria = c.size() / num_samples;
+    std::cout << "cluster sample count: " << c.size() << std::endl;
+    std::cout << "num smaples: " << num_samples << std::endl;
+
     if (c.criteria < tau) {
       c.anomalous = true;
     } else {
