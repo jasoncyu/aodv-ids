@@ -119,7 +119,12 @@ Clusters& ClusterAlg::LabelClusters (Clusters& cs)
   return cs;
 }
 
-// Clusters ClusterAlg::RunAlgorithm () {
+Clusters& ClusterAlg::RunAlgorithm () {
    
-// }
+  Sample norm_sample = Normalization(sample);
+
+  vector<Cluster> clusters = FormClusters(norm_sample);
+
+  return LabelClusters (clusters);
+}
 #undef LZZ_INLINE
