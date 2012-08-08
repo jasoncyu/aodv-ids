@@ -42,7 +42,7 @@
 #include "table.h"
 
 using namespace ns3;
-// using namespace std;
+using namespace std;
 
 void ReceivePacket (Ptr<Socket> socket)
 {
@@ -333,6 +333,8 @@ AodvExample::Training() {
 
 
   vector<Cluster> clusters = ca.FormClusters(norm_sample);
+  oss << "Number of clusters: " << clusters.size() << endl;
+
   labelled_clusters = ca.LabelClusters(clusters);
 
   int numberAnomClusters = 0;
@@ -343,6 +345,7 @@ AodvExample::Training() {
     }
   }
 
+  oss << "number of anom clusters: " << numberAnomClusters << endl;
   // w_cluster_table(w_values, numCluster, numAnom);
   Log(oss);
 }
