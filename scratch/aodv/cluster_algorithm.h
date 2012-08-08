@@ -28,7 +28,6 @@ public:
   Sample Normalization (Sample s);
   Clusters FormClusters (Sample s);
   void LabelClusters (Clusters &cs);
-  Clusters RunAlgorithm ();
 private:
   double tau;
   uint32_t FEATURE_LENGTH;

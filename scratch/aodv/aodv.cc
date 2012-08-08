@@ -79,6 +79,7 @@ AodvExample::Configure (int argc, char **argv)
   cmd.AddValue ("time", "Simulation time, s.", totalTime);
   cmd.AddValue ("step", "Grid step, m", step);
   cmd.AddValue ("mal", "Run simulation with second-to-last node maliciuos", malicious);
+  cmd.AddValue ("w", "Width value for cluster sim", w);
 
   cmd.Parse (argc, argv);
   return true;
@@ -169,7 +170,7 @@ void
 AodvExample::Log(std::ostringstream& oss, std::string name)
 {
   std::ofstream report;
-  report.open(name.c_str());
+  report.open(name.c_str(), ios::app);
   if (!report.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
@@ -199,35 +200,34 @@ AodvExample::Training() {
   std::ostringstream oss;
 
   //tau, feature length, w
-  ClusterAlg ca = ClusterAlg(0.2, 8, 1.0);
+  ClusterAlg ca = ClusterAlg(0.2, 8, w);
   // labelled_clusters = ca.RunAlgorithm();
 
   Sample norm_sample = ca.Normalization(sample);
-  TrainingDataTable(norm_sample);
-
 
   vector<Cluster> clusters = ca.FormClusters(norm_sample);
-  oss << "Number of clusters: " << clusters.size() << endl;
+  // oss << "Number of clusters: " << clusters.size() << endl;
 
   // ca.LabelClusters(clusters);
   ca.LabelClusters (clusters);
   Clusters labelled_clusters = clusters;
-  cout << "Criteria \t Anomalous?" << std::endl;
+  // cout << "Criteria \t Anomalous?" << std::endl;
 
   int numberAnomClusters = 0;
   vector<Cluster>::iterator clusters_itr;
   for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
     Cluster c = *clusters_itr;
-    cout << "Criteria: " << c.criteria << "\t" << c.anomalous << std::endl;
+    // cout << "Criteria: " << c.criteria << "\t" << c.anomalous << std::endl;
     if (clusters_itr->anomalous) {
       numberAnomClusters++;
     }
   }
 
-  oss << endl;
-  oss << "Number of anom clusters: " << numberAnomClusters << endl;
+  oss << w << "\t " << labelled_clusters.size() << "\t "<< numberAnomClusters << std::endl;
+  // oss << endl;
+  // oss << "Number of anom clusters: " << numberAnomClusters << endl;
   // w_cluster_table(w_values, numCluster, numAnom);
-  Log(oss);
+  Log(oss, "RESULT");
 }
 
 void
