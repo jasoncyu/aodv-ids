@@ -326,7 +326,7 @@ AodvExample::Training() {
 
   oss << "After normalization: " << std::endl;
   //tau, feature length, w
-  ClusterAlg ca = ClusterAlg(0.2, 8, 1.0);
+  ClusterAlg ca = ClusterAlg(0.2, 8, 1000.0);
   // labelled_clusters = ca.RunAlgorithm();
 
   Sample norm_sample = ca.Normalization(sample);

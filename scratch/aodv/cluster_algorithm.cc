@@ -68,7 +68,7 @@ Clusters ClusterAlg::FormClusters (Sample s)
     Cluster c;
     //first traffic becomes centroid of cluster
     if (cs.empty()) {
-      c = Cluster(t);
+      c = Cluster(t, w);
       cs.push_back(c);
     } else {
       //If a sample is in range of a cluster, add it to that cluster.
@@ -76,7 +76,7 @@ Clusters ClusterAlg::FormClusters (Sample s)
       for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
         //otherwise, create a new cluster with it
         if (!(cs_itr->add(t))) {
-          c = Cluster(t);
+          c = Cluster(t, w);
           to_add.push_back(c);
           break;
         }
@@ -107,9 +107,6 @@ void ClusterAlg::LabelClusters (Clusters& cs)
     double sample_count = num_samples;
     p_c->criteria = size/sample_count;
 
-    // std::cout << "cluster sample count: " << c.size() << std::endl;
-    // std::cout << "num samples: " << num_samples << std::endl;
-    std::cout << "criteria: " << p_c->criteria << std::endl;
 
     if (p_c->criteria < tau) {
       p_c->anomalous = true;
@@ -117,10 +114,6 @@ void ClusterAlg::LabelClusters (Clusters& cs)
       p_c->anomalous = false;
     }
   }
-
-  for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
-    std::cout << "Criteria: " << cs_itr->criteria << std::endl;
-   } 
 
   // return cs;
 }
