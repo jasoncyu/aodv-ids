@@ -18,7 +18,9 @@
  */
 
  //TODO: mess with random seed
-
+ //0.2, 0.4 to 1.0 at 10 seconds nothing interesting
+ //0.2, 0.4, to 1.0 at 50 seconds, all had 5 clusters, none of which are anomalous.
+ 
 #include "aodv.h"
 
 using namespace std;
@@ -48,7 +50,7 @@ AodvExample::AodvExample () :
   size (25),
   //100 is too large, all packets dropped
   step (50),
-  totalTime (500),
+  totalTime (50),
   pcap (true),
   printRoutes (true),
   rss(-80),
@@ -317,7 +319,7 @@ AodvExample::CreateNodes () {
   // mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
     "Bounds", RectangleValue (Rectangle (-1.0 * step, 6.0 * step, -1.0*step, 6.0*step)), 
-    "Speed", RandomVariableValue (UniformVariable (2.0, 55.0)));
+    "Speed", RandomVariableValue (UniformVariable (2.0, 120.0)));
   mobility.Install (nodes);
 }
 
