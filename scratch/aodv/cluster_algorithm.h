@@ -33,6 +33,7 @@ private:
   double tau;
   uint32_t FEATURE_LENGTH;
   double w;
+  uint32_t num_samples;
 };
 #undef LZZ_INLINE
 #endif

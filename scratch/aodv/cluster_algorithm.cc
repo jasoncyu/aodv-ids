@@ -12,6 +12,7 @@ ClusterAlg::ClusterAlg (double threshold, uint32_t vector_length, double max_wid
     FEATURE_LENGTH = vector_length;
     w = max_width;
   }
+
 void ClusterAlg::Stats (Sample s, Traffic & mean, Traffic & stddev)
                                                         {
     //go through the "position"th element of all the std::vectors and get the mean and push it onto the mean std::vector
@@ -35,6 +36,8 @@ void ClusterAlg::Stats (Sample s, Traffic & mean, Traffic & stddev)
 }
 Sample ClusterAlg::Normalization (Sample s)
                                 {
+  num_samples = s.size();
+
   Traffic mean, stddev;
   Stats(s, mean, stddev);
 
@@ -84,14 +87,14 @@ Clusters ClusterAlg::FormClusters (Sample s)
       to_add.clear();
     }
   }
-
   return cs;
   }
 Clusters ClusterAlg::LabelClusters (Clusters cs)
                                      {
   for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
     Cluster c = *cs_itr;
-    if (c.size() < tau) {
+    c.criteria = c.size() / num_samples;
+    if (c.criteria < tau) {
       c.anomalous = true;
     } else {
       c.anomalous = false;

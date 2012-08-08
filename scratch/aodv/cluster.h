@@ -7,18 +7,20 @@
 #include "common.h"
 #include <iostream>
 #include <stdint.h>
-class Cluster
+struct Cluster
 {
   Traffic centroid;
   uint32_t count;
   double w;
+  bool anomalous;
 
-public:
+  //used for inspection afterwards;
+  double criteria;
+
   uint32_t size ();
   bool add (Traffic t);
   Cluster ();
   Cluster(Traffic t);
-  bool anomalous;
   static double Distance (Traffic t1, Traffic t2);
 };
 #undef LZZ_INLINE
