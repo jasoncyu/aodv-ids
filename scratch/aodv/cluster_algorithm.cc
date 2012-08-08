@@ -89,21 +89,40 @@ Clusters ClusterAlg::FormClusters (Sample s)
   }
   return cs;
   }
-Clusters ClusterAlg::LabelClusters (Clusters cs)
+void ClusterAlg::LabelClusters (Clusters& cs)
                                      {
-  for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
-    Cluster c = *cs_itr;
-    c.criteria = c.size() / num_samples;
-    std::cout << "cluster sample count: " << c.size() << std::endl;
-    std::cout << "num smaples: " << num_samples << std::endl;
+  //original code operated on cs directly, which doesn't work
+  //because a copy is created at some point.
 
-    if (c.criteria < tau) {
-      c.anomalous = true;
+  // create a vector of cluster pointers, so our changes will count                                    
+  std::vector<Cluster*> vpc;
+  for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
+    vpc.push_back(&*cs_itr);
+  }
+  std::vector<Cluster*>::iterator vpc_itr;
+  for (vpc_itr = vpc.begin(); vpc_itr != vpc.end(); vpc_itr++) {
+    Cluster* p_c = *vpc_itr;
+    //to avoid integer division
+    double size = p_c->size();
+    double sample_count = num_samples;
+    p_c->criteria = size/sample_count;
+
+    // std::cout << "cluster sample count: " << c.size() << std::endl;
+    // std::cout << "num samples: " << num_samples << std::endl;
+    std::cout << "criteria: " << p_c->criteria << std::endl;
+
+    if (p_c->criteria < tau) {
+      p_c->anomalous = true;
     } else {
-      c.anomalous = false;
+      p_c->anomalous = false;
     }
   }
-  return cs;
+
+  for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
+    std::cout << "Criteria: " << cs_itr->criteria << std::endl;
+   } 
+
+  // return cs;
 }
 
 // Clusters ClusterAlg::RunAlgorithm () {

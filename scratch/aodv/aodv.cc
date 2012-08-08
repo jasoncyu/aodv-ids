@@ -336,15 +336,16 @@ AodvExample::Training() {
   vector<Cluster> clusters = ca.FormClusters(norm_sample);
   oss << "Number of clusters: " << clusters.size() << endl;
 
-  labelled_clusters = ca.LabelClusters(clusters);
-
-  oss << "Criteria \t Anomalous?" << std::endl;
+  // ca.LabelClusters(clusters);
+  ca.LabelClusters (clusters);
+  Clusters labelled_clusters = clusters;
+  cout << "Criteria \t Anomalous?" << std::endl;
 
   int numberAnomClusters = 0;
   vector<Cluster>::iterator clusters_itr;
-  for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
+  for (clusters_itr = clusters.begin(); clusters_itr != clusters.end(); clusters_itr++) {
     Cluster c = *clusters_itr;
-    oss << c.criteria << "\t" << c.anomalous << std::endl;
+    cout << c.criteria << "\t" << c.anomalous << std::endl;
     if (clusters_itr->anomalous) {
       numberAnomClusters++;
     }
