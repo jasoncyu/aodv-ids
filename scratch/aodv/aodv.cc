@@ -50,7 +50,7 @@ AodvExample::AodvExample () :
   size (25),
   //100 is too large, all packets dropped
   step (50),
-  totalTime (10),
+  totalTime (50),
   pcap (true),
   printRoutes (true),
   rss(-80),
