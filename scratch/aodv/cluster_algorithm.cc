@@ -26,8 +26,6 @@ void ClusterAlg::Stats (Sample s, Traffic & mean, Traffic & stddev)
         Traffic traffic = *s_itr;
         ithElements[position] = traffic[position];
       }
-      assert (i == size);
-
       double single_mean = gsl_stats_mean(ithElements, 1, FEATURE_LENGTH);
       mean.push_back(single_mean);
       double single_sd = gsl_stats_sd(ithElements, 1, FEATURE_LENGTH);

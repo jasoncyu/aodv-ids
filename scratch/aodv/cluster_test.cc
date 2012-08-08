@@ -7,28 +7,27 @@
 #include <iomanip>
 //I made these
 #include "common.h"
-// #include "cluster.h"
-#include "cluster.cc"
-#include "cluster_algorithm.h"
+#include "cluster.h"
+// #include "cluster_algorithm.h"
 
 using namespace std;
 
-Clusters clusters;
-Clusters*
-RunAlg(double tau, int ftr_len, double w, Sample sample) {
-  //tau, feature length, w
-  ClusterAlg ca = ClusterAlg(tau, ftr_len, w);
-  // labelled_clusters = ca.RunAlgorithm();
+// Clusters clusters;
+// Clusters*
+// RunAlg(double tau, int ftr_len, double w, Sample sample) {
+//   //tau, feature length, w
+//   ClusterAlg ca = ClusterAlg(tau, ftr_len, w);
+//   // labelled_clusters = ca.RunAlgorithm();
 
-  Sample norm_sample = ca.Normalization(sample);
-  vector<Cluster> clusters = ca.FormClusters(norm_sample);
-  cout << "Number of clusters: " << clusters.size() << endl;
+//   Sample norm_sample = ca.Normalization(sample);
+//   vector<Cluster> clusters = ca.FormClusters(norm_sample);
+//   cout << "Number of clusters: " << clusters.size() << endl;
 
-  // ca.LabelClusters(clusters);
-  ca.LabelClusters (clusters);
-  return &clusters;
-  //one sample centroid should be sole traffic
-}
+//   // ca.LabelClusters(clusters);
+//   ca.LabelClusters (clusters);
+//   return &clusters;
+//   //one sample centroid should be sole traffic
+// }
 
 int main(int argc, char const *argv[])
 {
@@ -45,22 +44,17 @@ int main(int argc, char const *argv[])
 
   Sample sample;
   sample.push_back(x);
+  cout << x << endl;
+  cout << sample << endl; 
+  // RunAlg(0.2, 8, 1.0, sample); 
 
-  
-  RunAlg(0.2, 8, 1.0, sample); 
+  // cout << "One-sample cluster should have centroid as sole traffic vector\n"
+  //      << "Expected: <1 1>\n" 
+  //      << "Actual: ";
+  // cout << endl; 
+  // cout << endl; 
 
-  cout << "One-sample cluster should have centroid as sole traffic vector\n"
-       << "Expected: <1 1>\n" 
-       << "Actual: ";
-  cout << endl; 
-  cout << endl; 
-
-  cout << "Clusters: " << clusters << endl;
-
-  sample.push_back(y);
-  sample.push_back(z);
-
-
+  // cout << "Clusters: " << clusters << endl;
   // std::cout << "Distance between x and y\n "
   //           << "Expected: 1.414\n"
   //           << "Actual: " << Cluster::Distance(x, c) ;

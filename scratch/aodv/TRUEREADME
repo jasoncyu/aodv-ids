@@ -1,4 +1,4 @@
-
+TODO: Fix cluster algorithm. Right now, regardless of w value, only 30 clusters are created
 Careful if you change the feature length to something except 8. Memory leaks.
 recvreply sends to next hop with scoket->sendTo
 sendPacketFromQueeu sends the data packet (I think_)
