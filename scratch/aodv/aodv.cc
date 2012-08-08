@@ -45,10 +45,10 @@ static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
 
 //-----------------------------------------------------------------------------
 AodvExample::AodvExample () :
-  size (5),
+  size (25),
   //100 is too large, all packets dropped
   step (50),
-  totalTime (50),
+  totalTime (500),
   pcap (true),
   printRoutes (true),
   rss(-80),
