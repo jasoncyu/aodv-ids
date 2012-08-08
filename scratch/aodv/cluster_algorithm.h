@@ -27,7 +27,7 @@ public:
   void Stats (Sample s, Traffic & mean, Traffic & stddev);
   Sample Normalization (Sample s);
   Clusters FormClusters (Sample s);
-  void LabelClusters (Clusters &cs);
+  Clusters& LabelClusters (Clusters& cs);
   Clusters RunAlgorithm ();
 private:
   double tau;

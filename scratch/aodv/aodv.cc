@@ -239,8 +239,6 @@ AodvExample::Training() {
 void
 AodvExample::Testing() 
 {
-
-
 }
 
 //plots w|clusters_total|clusters_anon
