@@ -20,7 +20,7 @@ struct Cluster
   uint32_t size ();
   bool add (Traffic t);
   Cluster ();
-  Cluster(Traffic t, double max_width);
+  Cluster(Traffic t);
   static double Distance (Traffic t1, Traffic t2);
 };
 #undef LZZ_INLINE

@@ -5,13 +5,12 @@
 
 #define LZZ_INLINE inline
 Cluster::Cluster ()
-  : centroid (), count (0), w (1.0) 
+  : centroid (), count (0), w (1.0), criteria(79.0)
                            {}
-Cluster::Cluster(Traffic t, double max_width) 
-  : count(1)
+Cluster::Cluster(Traffic t) 
+  : count(1), w (1.0), criteria(63.0)
 {
   centroid = t;
-  w = max_width;
 }
 bool Cluster::add (Traffic t)
 {

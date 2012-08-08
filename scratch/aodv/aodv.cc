@@ -199,8 +199,20 @@ AodvExample::Training() {
   std::ostringstream oss;
 
   //tau, feature length, w
-  ClusterAlg ca = ClusterAlg(0.2, 8, 1000.0);
-  labelled_clusters = ca.RunAlgorithm();
+  ClusterAlg ca = ClusterAlg(0.2, 8, 1.0);
+  // labelled_clusters = ca.RunAlgorithm();
+
+  Sample norm_sample = ca.Normalization(sample);
+  TrainingDataTable(norm_sample);
+
+
+  vector<Cluster> clusters = ca.FormClusters(norm_sample);
+  oss << "Number of clusters: " << clusters.size() << endl;
+
+  // ca.LabelClusters(clusters);
+  ca.LabelClusters (clusters);
+  Clusters labelled_clusters = clusters;
+  cout << "Criteria \t Anomalous?" << std::endl;
 
   int numberAnomClusters = 0;
   vector<Cluster>::iterator clusters_itr;
