@@ -55,6 +55,7 @@ private:
   double threshold;
 
   double w;
+  double tau;
 
   //The only sample in this file, the sample
   //from our ONE monitor node

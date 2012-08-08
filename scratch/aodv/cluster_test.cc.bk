@@ -9,11 +9,29 @@
 #include "common.h"
 // #include "cluster.h"
 #include "cluster.cc"
+#include "cluster_algorithm.h"
+
 using namespace std;
+
+Clusters clusters;
+Clusters*
+RunAlg(double tau, int ftr_len, double w, Sample sample) {
+  //tau, feature length, w
+  ClusterAlg ca = ClusterAlg(tau, ftr_len, w);
+  // labelled_clusters = ca.RunAlgorithm();
+
+  Sample norm_sample = ca.Normalization(sample);
+  vector<Cluster> clusters = ca.FormClusters(norm_sample);
+  cout << "Number of clusters: " << clusters.size() << endl;
+
+  // ca.LabelClusters(clusters);
+  ca.LabelClusters (clusters);
+  return &clusters;
+  //one sample centroid should be sole traffic
+}
 
 int main(int argc, char const *argv[])
 {
-  uint32_t size = 3; 
   double w = 2;
   double threshold = 0.3;
 
@@ -25,25 +43,22 @@ int main(int argc, char const *argv[])
   z.push_back(3);
   z.push_back(3);
 
-  std::map<int, vector<double> > result;
-  Sample y_sample = std::pair<int, vector<double> >(1, y);
-  result.insert(y_sample);
+  Sample sample;
+  sample.push_back(x);
 
-  Cluster c;
-  // c.add(y_sample);
-
-  // //one sample centroid should be sole traffic
-  // cout << "One-sample cluster should have centroid as sole traffic vector\n"
-  //      << "Expected: <1 1>\n" 
-  //      << "Actual: ";
   
-  // vector<double>::iterator itr ;
-  // for (itr = c.centroid.begin(); itr != c.centroid.end(); itr++) {
-  //   cout << *itr << " ";
-  // } 
+  RunAlg(0.2, 8, 1.0, sample); 
 
-  // cout << endl; 
-  // cout << endl; 
+  cout << "One-sample cluster should have centroid as sole traffic vector\n"
+       << "Expected: <1 1>\n" 
+       << "Actual: ";
+  cout << endl; 
+  cout << endl; 
+
+  cout << "Clusters: " << clusters << endl;
+
+  sample.push_back(y);
+  sample.push_back(z);
 
 
   // std::cout << "Distance between x and y\n "

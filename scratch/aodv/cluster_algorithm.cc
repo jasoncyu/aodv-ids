@@ -109,7 +109,7 @@ void ClusterAlg::LabelClusters (Clusters& cs)
 
     // std::cout << "cluster sample count: " << c.size() << std::endl;
     // std::cout << "num samples: " << num_samples << std::endl;
-    std::cout << "criteria: " << p_c->criteria << std::endl;
+    // std::cout << "criteria: " << p_c->criteria << std::endl;
 
     if (p_c->criteria < tau) {
       p_c->anomalous = true;
@@ -118,9 +118,9 @@ void ClusterAlg::LabelClusters (Clusters& cs)
     }
   }
 
-  for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
-    std::cout << "Criteria: " << cs_itr->criteria << std::endl;
-   } 
+  // for (Clusters::iterator cs_itr = cs.begin(); cs_itr != cs.end(); cs_itr++) {
+  //   std::cout << "Criteria: " << cs_itr->criteria << std::endl;
+  //  } 
 
   // return cs;
 }

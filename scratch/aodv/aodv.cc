@@ -20,6 +20,7 @@
  //TODO: mess with random seed
  //0.2, 0.4 to 1.0 at 10 seconds nothing interesting
  //0.2, 0.4, to 1.0 at 50 seconds, all had 5 clusters, none of which are anomalous.
+ //0.2, 0.6 ... up to 1.8, all had 30 clusters, 29 of which are anomalous
 
 #include "aodv.h"
 
@@ -61,7 +62,8 @@ AodvExample::AodvExample () :
   malicious(false),
   trace(true),
   threshold(0.10),
-  w(1)
+  w(1),
+  tau(0.2)
 {
 }
 
@@ -82,6 +84,7 @@ AodvExample::Configure (int argc, char **argv)
   cmd.AddValue ("step", "Grid step, m", step);
   cmd.AddValue ("mal", "Run simulation with second-to-last node maliciuos", malicious);
   cmd.AddValue ("w", "Width value for cluster sim", w);
+  cmd.AddValue ("tau", "Value for threshold tau", tau);
 
   cmd.Parse (argc, argv);
   return true;
@@ -202,7 +205,7 @@ AodvExample::Training() {
   std::ostringstream oss;
 
   //tau, feature length, w
-  ClusterAlg ca = ClusterAlg(0.2, 8, w);
+  ClusterAlg ca = ClusterAlg(tau, 8, w);
   // labelled_clusters = ca.RunAlgorithm();
 
   Sample norm_sample = ca.Normalization(sample);
