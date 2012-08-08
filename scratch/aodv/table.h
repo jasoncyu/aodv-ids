@@ -17,11 +17,11 @@
 class Table
 {
   static void TableHeaders (std::vector <std::string> header_names, std::ostringstream& oss);
-  static void TableValues (TrafficList tl, std::ostringstream& oss);
+  static void TableValues (Sample s, std::ostringstream& oss);
 
 public:
   static std::vector<int> widths;
-  static void CreateTables (std::string file_name, std::vector <std::string> header_names, TrainingData td);
+  static void CreateTables (std::string file_name, std::vector <std::string> header_names, Sample s);
 };
 
 #endif

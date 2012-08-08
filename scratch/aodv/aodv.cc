@@ -38,6 +38,7 @@
 //I made these
 #include "common.h"
 #include "cluster.h"
+#include "cluster_algorithm.h"
 #include "table.h"
 
 using namespace ns3;
@@ -112,12 +113,10 @@ private:
 
   double w;
 
-  //traffic samples after being extracted
-  Samples samples;
-  //labelled clusters resulting from normal traffic sim
-  Clusters training_clusters;
-  // map of (nodeID, trafficlist)
-  TrainingData training_data;
+  //The only sample in this file, the sample
+  //from our ONE monitor node
+  Sample sample;
+  Clusters labelled_clusters;
   //\}
 
   ///\name network
@@ -133,10 +132,9 @@ private:
   void Training();
   // Attack scenario tested.
   void Testing();
-  void Log(std::ostringstream& os, std::string name = "aodv.report");
-  void LogTraffic(std::map<int, vector<double> > result);
+  void Log(std::ostringstream& os, std::string name = "AODV_LOG");
   void AggregateTraffic(Ptr<Node> node);
-  void TrainingDataTable();
+  void TrainingDataTable(Sample s);
 
   void CreateNodes ();
   void CreateDevices ();
@@ -226,59 +224,55 @@ AodvExample::Run ()
   
   //Saves training data to training 
   Training(); 
-  TrainingDataTable();
-  Testing();
+  // Testing();
 }
 
-void 
-AodvExample::Testing() {
-  ostringstream oss;
+// void 
+// AodvExample::Testing() {
+//   ostringstream oss;
 
-  //total number of observations
-  int obs_count = 0;
-  //number of samples on which the monitor detects an anomaly
-  int anomalous_count = 0;
+//   //total number of observations
+//   int obs_count = 0;
+//   //number of samples on which the monitor detects an anomaly
+//   int anomalous_count = 0;
 
-  //go through all the monitor nodes. Right now, we have only one,
-  //so this should run once
-  while (tditr != training_data.end()) {
-    TrafficList traffic_list = tditr->second;
+//   //go through all the monitor nodes. Right now, we have only one,
+//   //so this should run once
+//   TrafficList traffic_list = training_data.second;
 
-    TrafficList::iterator tlitr = traffic_list.begin();
+//   TrafficList::iterator tlitr = traffic_list.begin();
 
-    //go through all the traffic of this monitor node
-    //traffic is taken at regular intervals
-    while (tlitr != traffic_list.end()) {
-      Traffic traffic = *tlitr;
+//   //go through all the traffic of this monitor node
+//   //traffic is taken at regular intervals
+//   while (tlitr != traffic_list.end()) {
+//     Traffic traffic = *tlitr;
 
-      RelativeCluster closest_relcluster = Cluster::ClosestRelCluster(traffic, training_clusters);
+//     RelativeCluster closest_relcluster = Cluster::ClosestRelCluster(traffic, training_clusters);
 
-      double distance = closest_relcluster.first;
-      Cluster closest_cluster = closest_relcluster.second;
+//     double distance = closest_relcluster.first;
+//     Cluster closest_cluster = closest_relcluster.second;
 
-      obs_count++;
-      //if the closest cluster is less than w away, we label
-      //the sample with the same label
-      if (distance < w) {
-        if (closest_cluster.anomalous) { anomalous_count++; }
-        //otherwise, we consider as not anomalous
-      }
+//     obs_count++;
+//     //if the closest cluster is less than w away, we label
+//     //the sample with the same label
+//     if (distance < w) {
+//       if (closest_cluster.anomalous) { anomalous_count++; }
+//       //otherwise, we consider as not anomalous
+//     }
 
-      tlitr++;
-    }
-    tditr++;
-  }
+//     tlitr++;
+//   }
 
-  assert (obs_count != 0);
+//   assert (obs_count != 0);
 
 
-  oss << "Anomaloust count: " << anomalous_count << std::endl;
-  oss << "Total count: " << obs_count << std::endl;
-  double detection_rate = anomalous_count/obs_count;
-  oss << "Detection rate: " << detection_rate << std::endl;
+//   oss << "Anomaloust count: " << anomalous_count << std::endl;
+//   oss << "Total count: " << obs_count << std::endl;
+//   double detection_rate = anomalous_count/obs_count;
+//   oss << "Detection rate: " << detection_rate << std::endl;
 
-  Log(oss);
-}
+//   Log(oss);
+// }
 
 
 
@@ -304,37 +298,9 @@ AodvExample::Log(std::ostringstream& oss, std::string name)
   report.close();
 }
 
-//takes a sample
-void
-AodvExample::LogTraffic(std::map<int, vector<double> > result)
-{
-  std::ostringstream os;
-
-  std::map<int, vector<double> >::iterator result_itr;
-  for (result_itr = result.begin(); result_itr != result.end(); result_itr++) {
-    int num = result_itr->first;
-    vector<double> traffic = result_itr->second;
-
-    std::vector<double>::iterator traffic_itr;
-    os << "Node " << num << ": "; 
-
-    for (traffic_itr = traffic.begin(); traffic_itr != traffic.end(); traffic_itr++) {
-      os << *traffic_itr;
-      if (traffic_itr + 1 != traffic.end()) {
-       os << "\t "; 
-      } 
-
-    }
-
-    os << "\n";
-  }
-
-  Log(os);
-}
-
 
 void
-AodvExample::TrainingDataTable() {
+AodvExample::TrainingDataTable(Sample s) {
   vector<std::string> headers;
   headers.push_back("RREQ_RECEIVED");
   headers.push_back("RREQ_SENT");
@@ -345,7 +311,7 @@ AodvExample::TrainingDataTable() {
   headers.push_back("RERR_RECEIVED");
   headers.push_back("HELLO_SENT");
 
-  Table::CreateTables("aodv.training", headers, training_data);
+  Table::CreateTables("TrainingDataTable", headers, s);
 }
 
 //cluster algorithm
@@ -353,40 +319,29 @@ void
 AodvExample::Training() {
   std::ostringstream oss;
 
-  std::cout << "Number of samples should be 1. Actual: " << samples.size() << std::endl;
-  map<int, vector<double> > norm_samples = Cluster::Normalization(samples, size, oss);
-  LogTraffic(norm_samples);
+  oss << "Number of samples: " << sample.size() << std::endl;
 
-  std::ofstream report;
-  //wipe out old report
-  report.open("aodv.clusters");
-  report.close();
+  oss << "Before normalization: " << std::endl;
+  TrainingDataTable(sample);
 
-  //deprecated
-  //these are vectors because we're getting one for each w-value
-  //and so we can output to a table
-  // vector<double> w_values;
-  // vector<int> numCluster, numAnom;
+  oss << "After normalization: " << std::endl;
+  ClusterAlg ca = ClusterAlg(0.2, 8, 1.0);
+  // labelled_clusters = ca.RunAlgorithm();
 
-  vector<Cluster> clusters = Cluster::FormClusters(norm_samples, w);
-  vector<Cluster> labelled_clusters = Cluster::LabelClusters(clusters, threshold, size, oss);
+  Sample norm_sample = ca.Normalization(sample);
+  TrainingDataTable(norm_sample);
 
-  //set member variable
-  training_clusters = labelled_clusters;
+
+  vector<Cluster> clusters = ca.FormClusters(norm_sample);
+  labelled_clusters = ca.LabelClusters(clusters);
 
   int numberAnomClusters = 0;
   vector<Cluster>::iterator clusters_itr;
   for (clusters_itr = labelled_clusters.begin(); clusters_itr != labelled_clusters.end(); clusters_itr++) {
     if (clusters_itr->anomalous) {
       numberAnomClusters++;
-      std::map<int, vector<double> >::iterator samples_itr;
-      std::map<int, vector<double> > samples = clusters_itr->samples;
     }
   }
-
-  // w_values.push_back(w);
-  // numCluster.push_back(clusters.size());
-  // numAnom.push_back(numberAnomClusters);
 
   // w_cluster_table(w_values, numCluster, numAnom);
   Log(oss);
@@ -527,7 +482,6 @@ AodvExample::InstallInternetStack ()
     routing->GetAttribute("Monitor", monitor);
 
     if (monitor) {
-      TrafficList traffic_list;
       double obs_interval = 10.0;
       double current_time = 10.0;
 
@@ -595,15 +549,5 @@ AodvExample::AggregateTraffic(Ptr<Node> node) {
   Traffic traffic;
   routing->GetMonitoredData(traffic); 
 
-  TrafficList traffic_list;
-  // vector< vector<double> > traffic_list;
-  int node_id = node->GetId ();
-  if (training_data.find(node_id) == training_data.end()) {
-    traffic_list.push_back (traffic);
-  } else {
-    traffic_list = training_data.find(node_id)->second;
-    traffic_list.push_back(traffic);
-    training_data.erase(node_id);
-  }
-  training_data.insert(pair<int, TrafficList>(node_id, traffic_list));
+  sample.push_back(traffic);
 }

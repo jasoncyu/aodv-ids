@@ -3,16 +3,17 @@
 
 #include <vector>
 #include <map>
+#include <cmath>
+#include <cassert>
+#include <sstream>
 
+//forward definition needed for below
 class Cluster;
 
-typedef std::pair <int, std::vector<double> > Sample;
-typedef std::vector <double> Traffic;
-typedef std::vector <std::vector<double > > TrafficList;
-typedef std::map <int, std::vector<double> > Samples;
+typedef std::vector<double> Traffic;
+typedef std::vector <std::vector<double > > Sample;
 typedef std::vector <Cluster> Clusters;
 typedef std::pair<double,Cluster> RelativeCluster;
-typedef std::pair <int, TrafficList> TrainingDatum;
-typedef std::map <int, TrafficList> TrainingData;
 
+std::ostream & operator << (std::ostream & out, Traffic const t);
 #endif

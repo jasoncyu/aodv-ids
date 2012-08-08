@@ -25,9 +25,9 @@ Table::TableHeaders(vector<string> header_names, ostringstream& oss) {
 }
 
 void
-Table::TableValues(TrafficList tl, ostringstream& oss) {
-  TrafficList::iterator itr = tl.begin();
-  while (itr != tl.end()) {
+Table::TableValues(Sample s, ostringstream& oss) {
+  Sample::iterator itr = s.begin();
+  while (itr != s.end()) {
     Traffic traffic = *itr;
     for (uint32_t i = 0; i < traffic.size(); ++i)
     {
@@ -42,7 +42,7 @@ Table::TableValues(TrafficList tl, ostringstream& oss) {
 // and there should be exactly x of them, one for 
 //each row of the table
 void
-Table::CreateTables(string file_name, vector<string> header_names, TrainingData td ) {
+Table::CreateTables(string file_name, vector<string> header_names, Sample s) {
   std::ofstream report;
   report.open(file_name.c_str());
   if (!report.is_open ()) {
@@ -51,14 +51,10 @@ Table::CreateTables(string file_name, vector<string> header_names, TrainingData 
 
   ostringstream oss;
 
-  TrainingData::iterator tditr = td.begin();
-  int num = tditr->first;
-  TrafficList tl = tditr->second;
-
-  oss << "Monitor Node #" << num << std::endl; 
+  // oss << "Monitor Node #" << num << std::endl; 
   oss << "-------------------------------------------" << std::endl;
   TableHeaders(header_names, oss);
-  TableValues(tl, oss);
+  TableValues(s, oss);
 
   report << oss.str() << std::endl; 
   report.close();
