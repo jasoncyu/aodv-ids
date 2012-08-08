@@ -27,8 +27,8 @@ public:
   void Stats (Sample s, Traffic & mean, Traffic & stddev);
   Sample Normalization (Sample s);
   Clusters FormClusters (Sample s);
-  Clusters& LabelClusters (Clusters& cs);
-  Clusters& RunAlgorithm ();
+  void LabelClusters (Clusters &cs);
+  Clusters RunAlgorithm ();
 private:
   double tau;
   uint32_t FEATURE_LENGTH;

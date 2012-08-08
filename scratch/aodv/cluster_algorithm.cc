@@ -89,7 +89,7 @@ Clusters ClusterAlg::FormClusters (Sample s)
   }
   return cs;
   }
-Clusters& ClusterAlg::LabelClusters (Clusters& cs)
+void ClusterAlg::LabelClusters (Clusters& cs)
                                      {
   //original code operated on cs directly, which doesn't work
   //because a copy is created at some point.
@@ -105,7 +105,6 @@ Clusters& ClusterAlg::LabelClusters (Clusters& cs)
     //to avoid integer division
     double size = p_c->size();
     double sample_count = num_samples;
-    std::cout << p_c->criteria << std::endl;
     p_c->criteria = size/sample_count;
 
 
@@ -116,7 +115,7 @@ Clusters& ClusterAlg::LabelClusters (Clusters& cs)
     }
   }
 
-  return cs;
+  // return cs;
 }
 
 Clusters& ClusterAlg::RunAlgorithm () {
