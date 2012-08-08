@@ -1645,15 +1645,15 @@ RoutingProtocol::GetMonitoredData(vector<double>& traffic)
   traffic.push_back(rerr_received);
   traffic.push_back(hello_sent);
 
-  rreq_received = 0;
-  rreq_dropped = 0;
-  rreq_sent = 0;
-  rrep_sent = 0;
-  rrep_forwarded = 0;
-  rrep_received = 0;
-  rerr_sent = 0;
-  rerr_received = 0;
-  hello_sent = 0;
+  // rreq_received = 0;
+  // rreq_dropped = 0;
+  // rreq_sent = 0;
+  // rrep_sent = 0;
+  // rrep_forwarded = 0;
+  // rrep_received = 0;
+  // rerr_sent = 0;
+  // rerr_received = 0;
+  // hello_sent = 0;
 }
 
 void

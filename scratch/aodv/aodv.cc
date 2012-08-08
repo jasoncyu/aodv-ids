@@ -20,7 +20,7 @@
  //TODO: mess with random seed
  //0.2, 0.4 to 1.0 at 10 seconds nothing interesting
  //0.2, 0.4, to 1.0 at 50 seconds, all had 5 clusters, none of which are anomalous.
- 
+
 #include "aodv.h"
 
 using namespace std;
@@ -50,7 +50,7 @@ AodvExample::AodvExample () :
   size (25),
   //100 is too large, all packets dropped
   step (50),
-  totalTime (50),
+  totalTime (10),
   pcap (true),
   printRoutes (true),
   rss(-80),
@@ -206,7 +206,7 @@ AodvExample::Training() {
   // labelled_clusters = ca.RunAlgorithm();
 
   Sample norm_sample = ca.Normalization(sample);
-
+  TrainingDataTable(norm_sample);
   vector<Cluster> clusters = ca.FormClusters(norm_sample);
   // oss << "Number of clusters: " << clusters.size() << endl;
 
@@ -374,8 +374,8 @@ AodvExample::InstallInternetStack ()
     routing->GetAttribute("Monitor", monitor);
 
     if (monitor) {
-      double obs_interval = 10.0;
-      double current_time = 10.0;
+      double obs_interval = 1.0;
+      double current_time = 5.0;
 
       while (current_time <= totalTime) {
         Time Tcurrent_time = Seconds (current_time);
