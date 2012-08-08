@@ -290,7 +290,7 @@ void
 AodvExample::Log(std::ostringstream& oss, std::string name)
 {
   std::ofstream report;
-  report.open(name.c_str(), ios::app);
+  report.open(name.c_str());
   if (!report.is_open ()) {
     std::cout << "ERROR: could not open file" << std::endl;
   }
@@ -345,7 +345,7 @@ AodvExample::Training() {
     }
   }
 
-  oss << "number of anom clusters: " << numberAnomClusters << endl;
+  oss << "Number of anom clusters: " << numberAnomClusters << endl;
   // w_cluster_table(w_values, numCluster, numAnom);
   Log(oss);
 }

@@ -75,10 +75,13 @@ Clusters ClusterAlg::FormClusters (Sample s)
         if (!(cs_itr->add(t))) {
           c = Cluster(t);
           to_add.push_back(c);
+          break;
         }
       }
-      for (Clusters::iterator to_add_itr = to_add.begin(); to_add_itr != to_add.end(); to_add_itr++)
+      for (Clusters::iterator to_add_itr = to_add.begin(); to_add_itr != to_add.end(); to_add_itr++) {
         cs.push_back(*to_add_itr);
+      }
+      to_add.clear();
     }
   }
 
