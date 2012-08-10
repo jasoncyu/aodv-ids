@@ -31,8 +31,8 @@ using namespace std;
 
 int main(int argc, char const *argv[])
 {
-  double w = 2;
-  double threshold = 0.3;
+  // double w = 2;
+  // double threshold = 0.3;
 
   vector<double> x, y, z;
   x.push_back(0);

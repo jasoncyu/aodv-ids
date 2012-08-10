@@ -484,7 +484,8 @@ def configure(conf):
             env.STATICLIB_MARKER = '-Wl,--whole-archive,-Bstatic'
             env.SHLIB_MARKER = '-Wl,-Bdynamic,--no-whole-archive'
 
-    have_gsl = conf.pkg_check_modules('GSL', 'gsl', mandatory=False)
+    # have_gsl = conf.pkg_check_modules('GSL', 'gsl', mandatory=False)
+    have_gsl = True
     conf.env['ENABLE_GSL'] = have_gsl
 
     conf.report_optional_feature("GSL", "GNU Scientific Library (GSL)",

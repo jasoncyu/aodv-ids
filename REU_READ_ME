@@ -1,0 +1,16 @@
+Author: Jason Yu <jason_yu@hmc.edu>
+
+This is a simulation for wireless sensor networks using the AODV protocol.
+The approach used is basically the one used by this paper:
+http://www.tandfonline.com/doi/abs/10.1080/15501320600692044
+
+ns-3.13
+
+The only files in this repository are those I wrote myself or ns-3
+core files that I modified. This repository should be put in wherever
+you install ns-3.
+
+Majority of simulation files are in scratch/aodv
+
+
+
